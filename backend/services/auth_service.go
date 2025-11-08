@@ -49,30 +49,30 @@ type ChangePasswordRequest struct {
 
 // UserResponse represents user data with encrypted IDs for API responses
 type UserResponse struct {
-	ID               string             `json:"id,omitempty"`
-	Username         string             `json:"username"`
-	Email            string             `json:"email"`
-	FirstName        string             `json:"first_name"`
-	LastName         string             `json:"last_name"`
-	Role             models.Role        `json:"role"`
-	IsSuperAdmin     bool               `json:"is_super_admin,omitempty"`
-	Designation      string             `json:"designation,omitempty"`
-	DepartmentID     string             `json:"department_id,omitempty"`
-	ManagerID        string             `json:"manager_id,omitempty"`
-	EmployeeCode     string             `json:"employee_code,omitempty"`
-	DateOfJoin       string             `json:"date_of_join,omitempty"`
-	Status           models.UserStatus  `json:"status"`
-	Phone            string             `json:"phone,omitempty"`
-	Address          models.Address     `json:"address,omitempty"`
-	ProfilePic       string             `json:"profile_pic,omitempty"`
-	ResumeURL        string             `json:"resume_url,omitempty"`
-	Company          string             `json:"company,omitempty"`
+	ID               string              `json:"id,omitempty"`
+	Username         string              `json:"username"`
+	Email            string              `json:"email"`
+	FirstName        string              `json:"first_name"`
+	LastName         string              `json:"last_name"`
+	Role             models.Role         `json:"role"`
+	IsSuperAdmin     bool                `json:"is_super_admin,omitempty"`
+	Designation      string              `json:"designation,omitempty"`
+	DepartmentID     string              `json:"department_id,omitempty"`
+	ManagerID        string              `json:"manager_id,omitempty"`
+	EmployeeCode     string              `json:"employee_code,omitempty"`
+	DateOfJoin       string              `json:"date_of_join,omitempty"`
+	Status           models.UserStatus   `json:"status"`
+	Phone            string              `json:"phone,omitempty"`
+	Address          models.Address      `json:"address,omitempty"`
+	ProfilePic       string              `json:"profile_pic,omitempty"`
+	ResumeURL        string              `json:"resume_url,omitempty"`
+	Company          string              `json:"company,omitempty"`
 	BankDetails      *models.BankDetails `json:"bank_details,omitempty"`
-	LastLogin        primitive.DateTime `json:"last_login,omitempty"`
-	EmailVerified    bool               `json:"email_verified"`
-	TwoFactorEnabled bool               `json:"two_factor_enabled"`
-	CreatedAt        primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt        primitive.DateTime `json:"updated_at,omitempty"`
+	LastLogin        primitive.DateTime  `json:"last_login,omitempty"`
+	EmailVerified    bool                `json:"email_verified"`
+	TwoFactorEnabled bool                `json:"two_factor_enabled"`
+	CreatedAt        primitive.DateTime  `json:"created_at,omitempty"`
+	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty"`
 }
 
 // convertUserToResponse converts User model to UserResponse with encrypted IDs
