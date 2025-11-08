@@ -20,6 +20,8 @@ type Success interface {
 	AcceptedWithoutData(c *fiber.Ctx, msg string) error
 	PartialContentWithoutData(c *fiber.Ctx, msg string) error
 	MultiStatusWithoutData(c *fiber.Ctx, msg string) error
+
+	OkWithPagination(c *fiber.Ctx, msg string, data interface{}, page, limit, total int64) error
 }
 
 func createSuccessResponse(c *fiber.Ctx, status int, msg string, defaultMsg string, data interface{}) error {
@@ -98,4 +100,32 @@ func (s *successImpl) PartialContentWithoutData(c *fiber.Ctx, msg string) error 
 
 func (s *successImpl) MultiStatusWithoutData(c *fiber.Ctx, msg string) error {
 	return createSuccessResponse(c, fiber.StatusMultiStatus, msg, "Multi Status", nil)
+}
+
+func (s *successImpl) OkWithPagination(c *fiber.Ctx, msg string, data interface{}, page, limit, total int64) error {
+	if msg == "" {
+		msg = "OK"
+	}
+
+	resp := fiber.Map{
+		"message": msg,
+		"success": true,
+		"data":    data,
+		"meta": fiber.Map{
+			"page":  page,
+			"limit": limit,
+			"total": total,
+			"total_pages": func() int64 {
+				if limit == 0 {
+					return 0
+				}
+				if total%limit == 0 {
+					return total / limit
+				}
+				return (total / limit) + 1
+			}(),
+		},
+	}
+
+	return c.Status(fiber.StatusOK).JSON(resp)
 }
