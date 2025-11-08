@@ -96,7 +96,9 @@ func (ac *AttendanceController) ListAttendance(c *fiber.Ctx) error {
 	}
 
 	return constants.HTTPSuccess.OkWithPagination(c, "Attendance list retrieved successfully", attendances, page, limit, total)
-} // GetAttendanceSummary retrieves attendance summary statistics
+} 
+
+// GetAttendanceSummary retrieves attendance summary statistics
 func (ac *AttendanceController) GetAttendanceSummary(c *fiber.Ctx) error {
 	companyID, err := middlewares.GetAuthCompanyID(c)
 	if err != nil {
