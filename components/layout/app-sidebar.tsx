@@ -22,7 +22,6 @@ import {
   IconCash,
   IconSettings,
   IconLogout,
-  IconChartBar,
   IconClock,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -71,12 +70,6 @@ const menuItems = [
     icon: IconFileText,
     label: "Documents",
     roles: ["admin", "hr", "employee"],
-  },
-  {
-    href: "/dashboard/reports",
-    icon: IconChartBar,
-    label: "Reports",
-    roles: ["admin", "hr", "payroll"],
   },
 ];
 

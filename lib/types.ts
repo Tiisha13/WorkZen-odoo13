@@ -1,3 +1,12 @@
+export interface BankDetails {
+  account_number?: string;
+  bank_name?: string;
+  ifsc_code?: string;
+  branch_name?: string;
+  pan_no?: string;
+  uan_no?: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -13,6 +22,7 @@ export interface User {
   phone?: string;
   company?: string;
   email_verified: boolean;
+  bank_details?: BankDetails;
 }
 
 export interface Company {
