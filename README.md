@@ -66,9 +66,20 @@ A comprehensive Human Resource Management System built with Go (Fiber v2) and Mo
    ```
 
 4. **Create uploads directory:**
+
    ```bash
    mkdir -p assets/uploads
    ```
+
+5. **Database Seeding (Automatic):**
+
+   The application automatically seeds initial data on first run:
+
+   - SuperAdmin user (`superadmin@workzen.com` / `SuperAdmin@123`)
+   - Demo company and admin user
+   - Basic departments
+
+   See [SEED_GUIDE.md](./SEED_GUIDE.md) for details.
 
 ## 🏃 Running the Application
 
@@ -99,19 +110,21 @@ Full API documentation is available in [API_DOCUMENTATION.md](./API_DOCUMENTATIO
 curl http://localhost:3000/api/v1/health
 ```
 
-**Signup:**
+**Login with SuperAdmin:**
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/auth/signup \
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "company_name": "Test Company",
-    "email": "admin@test.com",
-    "password": "TestPass123",
-    "first_name": "Admin",
-    "last_name": "User",
-    "phone": "+919876543210"
+    "username": "superadmin@workzen.com",
+    "password": "SuperAdmin@123"
   }'
+```
+
+**Verify Seed Data:**
+
+```bash
+./verify_seed.sh
 ```
 
 ## 🏗️ Project Structure

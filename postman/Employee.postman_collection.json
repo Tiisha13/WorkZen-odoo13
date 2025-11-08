@@ -1,0 +1,463 @@
+{
+    "info": {
+        "_postman_id": "workzen-employee-collection",
+        "name": "WorkZen - Employee",
+        "description": "Employee role testing - Self-service features including attendance, leaves, and profile management",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{employee_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "employee_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "user_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "leave_id",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Login as Employee",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.token) {",
+                                    "        pm.collectionVariables.set('employee_token', jsonData.data.token);",
+                                    "        console.log('Employee token saved');",
+                                    "    }",
+                                    "    if (jsonData.data && jsonData.data.user) {",
+                                    "        pm.collectionVariables.set('user_id', jsonData.data.user.id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"employee@workzen.com\",\n  \"password\": \"TempPassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login with Employee credentials"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/auth/me",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "me"
+                            ]
+                        },
+                        "description": "View my profile information"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"old_password\": \"TempPassword123\",\n  \"new_password\": \"MyNewPass123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/change-password",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "change-password"
+                            ]
+                        },
+                        "description": "Change my password"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Attendance",
+            "item": [
+                {
+                    "name": "Check In",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/attendance/check-in",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "attendance",
+                                "check-in"
+                            ]
+                        },
+                        "description": "Mark attendance check-in for today"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check Out",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/attendance/check-out",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "attendance",
+                                "check-out"
+                            ]
+                        },
+                        "description": "Mark attendance check-out for today"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get My Attendance",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/attendance/me?month=2025-11",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "attendance",
+                                "me"
+                            ],
+                            "query": [
+                                {
+                                    "key": "month",
+                                    "value": "2025-11"
+                                }
+                            ]
+                        },
+                        "description": "View my attendance history for a month"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Leave Management",
+            "item": [
+                {
+                    "name": "Apply Leave",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.id) {",
+                                    "        pm.collectionVariables.set('leave_id', jsonData.data.id);",
+                                    "        console.log('Leave application created:', jsonData.data.id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"leave_type\": \"casual_leave\",\n  \"from_date\": \"2025-11-15\",\n  \"to_date\": \"2025-11-17\",\n  \"reason\": \"Personal work\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/leaves",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "leaves"
+                            ]
+                        },
+                        "description": "Apply for leave"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Apply Sick Leave",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"leave_type\": \"sick_leave\",\n  \"from_date\": \"2025-11-20\",\n  \"to_date\": \"2025-11-21\",\n  \"reason\": \"Medical appointment\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/leaves",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "leaves"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get My Leaves",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/leaves?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "leaves"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "View my leave history"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Pending Leaves",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/leaves?status=pending",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "leaves"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "pending"
+                                }
+                            ]
+                        },
+                        "description": "View my pending leave applications"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Salary & Payroll",
+            "item": [
+                {
+                    "name": "Get My Salary Structure",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/salary-structure/{{user_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "salary-structure",
+                                "{{user_id}}"
+                            ]
+                        },
+                        "description": "View my current salary structure"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get My Payroll",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/payrolls/{{user_id}}?month=2025-11",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "payrolls",
+                                "{{user_id}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "month",
+                                    "value": "2025-11"
+                                }
+                            ]
+                        },
+                        "description": "View my payroll for specific month"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Documents",
+            "item": [
+                {
+                    "name": "Upload Document",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": []
+                                },
+                                {
+                                    "key": "category",
+                                    "value": "resume",
+                                    "type": "text",
+                                    "description": "resume, id_proof, certificate, etc."
+                                },
+                                {
+                                    "key": "description",
+                                    "value": "My resume",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "employee_id",
+                                    "value": "{{user_id}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/documents/upload",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "documents",
+                                "upload"
+                            ]
+                        },
+                        "description": "Upload my documents"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get My Documents",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/documents?employee_id={{user_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "documents"
+                            ],
+                            "query": [
+                                {
+                                    "key": "employee_id",
+                                    "value": "{{user_id}}"
+                                }
+                            ]
+                        },
+                        "description": "View all my uploaded documents"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}
