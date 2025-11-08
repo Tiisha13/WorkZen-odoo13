@@ -249,8 +249,10 @@ func (s *AuthService) Signup(req *SignupRequest) error {
 		IsApproved: false,
 		IsActive:   true,
 	}
+	// Company is self-created during signup, so CreatedBy will be the admin user (set after user creation)
 	company.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	company.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	company.IsDeleted = false
 
 	_, err = companiesCollection.InsertOne(ctx, company)
 	if err != nil {
@@ -264,23 +266,37 @@ func (s *AuthService) Signup(req *SignupRequest) error {
 	// Hash password
 	hashedPassword := encryptions.HashPassword(req.Password)
 
-	// Create admin user (inactive until company is approved)
-	adminUser := models.User{
-		ID:           primitive.NewObjectID(),
-		Username:     username,
-		Email:        req.Email,
-		Password:     hashedPassword,
-		FirstName:    req.FirstName,
-		LastName:     req.LastName,
-		Role:         models.RoleAdmin,
-		IsSuperAdmin: false,
-		Status:       models.UserInactive, // Inactive until approved
-		Company:      company.ID,
-		DateOfJoin:   now.Format("2006-01-02"),
-		EmployeeCode: username,
+	// Generate email verification token
+	verificationToken, err := helpers.GenerateVerificationToken()
+	if err != nil {
+		companiesCollection.DeleteOne(ctx, bson.M{"_id": company.ID})
+		return fmt.Errorf("failed to generate verification token: %w", err)
 	}
+
+	// Create admin user (inactive and unverified until email is confirmed)
+	adminUser := models.User{
+		ID:                     primitive.NewObjectID(),
+		Username:               username,
+		Email:                  req.Email,
+		Password:               hashedPassword,
+		FirstName:              req.FirstName,
+		LastName:               req.LastName,
+		Role:                   models.RoleAdmin,
+		IsSuperAdmin:           false,
+		Status:                 models.UserInactive, // Inactive until approved
+		EmailVerified:          false,
+		EmailVerificationToken: verificationToken,
+		TokenExpiry:            primitive.NewDateTimeFromTime(helpers.VerificationTokenExpiry()),
+		Company:                company.ID,
+		DateOfJoin:             now.Format("2006-01-02"),
+		EmployeeCode:           username,
+	}
+	// User is self-registering, CreatedBy will be self after creation
 	adminUser.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	adminUser.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	adminUser.IsDeleted = false
+	adminUser.CreatedBy = adminUser.ID
+	adminUser.UpdatedBy = adminUser.ID
 
 	_, err = usersCollection.InsertOne(ctx, adminUser)
 	if err != nil {
@@ -288,6 +304,13 @@ func (s *AuthService) Signup(req *SignupRequest) error {
 		companiesCollection.DeleteOne(ctx, bson.M{"_id": company.ID})
 		return fmt.Errorf("failed to create admin user: %w", err)
 	}
+
+	// Send verification email (non-blocking, log error if fails)
+	go func() {
+		if err := helpers.SendVerificationEmail(req.Email, verificationToken, req.CompanyName); err != nil {
+			fmt.Printf("Failed to send verification email to %s: %v\n", req.Email, err)
+		}
+	}()
 
 	return nil
 }
@@ -300,13 +323,14 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
 	companiesCollection := databases.MongoDBDatabase.Collection(collections.Companies)
 
-	// Find user by username or email
+	// Find user by username or email (exclude soft-deleted users)
 	var user models.User
 	err := usersCollection.FindOne(ctx, bson.M{
 		"$or": []bson.M{
 			{"username": req.Username},
 			{"email": req.Username},
 		},
+		"is_deleted": false,
 	}).Decode(&user)
 	if err != nil {
 		return nil, errors.New("invalid username or password")
@@ -315,6 +339,11 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	// Verify password
 	if !encryptions.ComparePassword(req.Password, user.Password) {
 		return nil, errors.New("invalid username or password")
+	}
+
+	// Check if email is verified (except for SuperAdmin)
+	if !user.IsSuperAdmin && !user.EmailVerified {
+		return nil, errors.New("please verify your email address before logging in")
 	}
 
 	// Check if user is active
@@ -327,7 +356,7 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 
 	// If user belongs to a company, check if company is approved and active
 	if !user.IsSuperAdmin {
-		err = companiesCollection.FindOne(ctx, bson.M{"_id": user.Company}).Decode(&company)
+		err = companiesCollection.FindOne(ctx, bson.M{"_id": user.Company, "is_deleted": false}).Decode(&company)
 		if err != nil {
 			return nil, errors.New("company not found")
 		}
@@ -426,6 +455,121 @@ func (s *AuthService) GetUserProfile(userID primitive.ObjectID) (*UserResponse, 
 	return userResponse, nil
 }
 
+// VerifyEmail verifies a user's email using the verification token
+func (s *AuthService) VerifyEmail(token string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
+	companiesCollection := databases.MongoDBDatabase.Collection(collections.Companies)
+
+	// Find user by verification token
+	var user models.User
+	err := usersCollection.FindOne(ctx, bson.M{
+		"email_verification_token": token,
+	}).Decode(&user)
+	if err != nil {
+		return errors.New("invalid or expired verification token")
+	}
+
+	// Check if token has expired
+	if time.Now().After(user.TokenExpiry.Time()) {
+		return errors.New("verification token has expired")
+	}
+
+	// Check if email is already verified
+	if user.EmailVerified {
+		return errors.New("email is already verified")
+	}
+
+	// Update user to mark email as verified
+	_, err = usersCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": user.ID},
+		bson.M{
+			"$set": bson.M{
+				"email_verified":       true,
+				"timestamp.updated_at": primitive.NewDateTimeFromTime(time.Now()),
+			},
+			"$unset": bson.M{
+				"email_verification_token": "",
+			},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to verify email: %w", err)
+	}
+
+	// Get company details for welcome email
+	var company models.Company
+	companiesCollection.FindOne(ctx, bson.M{"_id": user.Company}).Decode(&company)
+
+	// Send welcome email (non-blocking)
+	go func() {
+		if err := helpers.SendWelcomeEmail(user.Email, user.FirstName, company.Name, user.Username); err != nil {
+			fmt.Printf("Failed to send welcome email to %s: %v\n", user.Email, err)
+		}
+	}()
+
+	return nil
+}
+
+// ResendVerificationEmail resends the verification email
+func (s *AuthService) ResendVerificationEmail(email string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
+	companiesCollection := databases.MongoDBDatabase.Collection(collections.Companies)
+
+	// Find user by email
+	var user models.User
+	err := usersCollection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	// Check if already verified
+	if user.EmailVerified {
+		return errors.New("email is already verified")
+	}
+
+	// Generate new verification token
+	verificationToken, err := helpers.GenerateVerificationToken()
+	if err != nil {
+		return fmt.Errorf("failed to generate verification token: %w", err)
+	}
+
+	// Update user with new token
+	_, err = usersCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": user.ID},
+		bson.M{
+			"$set": bson.M{
+				"email_verification_token": verificationToken,
+				"token_expiry":             primitive.NewDateTimeFromTime(helpers.VerificationTokenExpiry()),
+				"timestamp.updated_at":     primitive.NewDateTimeFromTime(time.Now()),
+			},
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update verification token: %w", err)
+	}
+
+	// Get company details
+	var company models.Company
+	companiesCollection.FindOne(ctx, bson.M{"_id": user.Company}).Decode(&company)
+
+	// Send verification email (non-blocking)
+	go func() {
+		if err := helpers.SendVerificationEmail(user.Email, verificationToken, company.Name); err != nil {
+			fmt.Printf("Failed to send verification email to %s: %v\n", user.Email, err)
+		}
+	}()
+
+	return nil
+}
+
 // ChangePassword updates user password
 func (s *AuthService) ChangePassword(userID primitive.ObjectID, req *ChangePasswordRequest) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -454,8 +598,8 @@ func (s *AuthService) ChangePassword(userID primitive.ObjectID, req *ChangePassw
 		bson.M{"_id": userID},
 		bson.M{
 			"$set": bson.M{
-				"password":   hashedPassword,
-				"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+				"password":             hashedPassword,
+				"timestamp.updated_at": primitive.NewDateTimeFromTime(time.Now()),
 			},
 		},
 	)
@@ -493,8 +637,8 @@ func (s *AuthService) ResetPasswordByAdmin(adminID, targetUserID primitive.Objec
 		bson.M{"_id": targetUserID},
 		bson.M{
 			"$set": bson.M{
-				"password":   hashedPassword,
-				"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+				"password":             hashedPassword,
+				"timestamp.updated_at": primitive.NewDateTimeFromTime(time.Now()),
 			},
 		},
 	)

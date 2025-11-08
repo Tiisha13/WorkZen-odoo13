@@ -34,6 +34,8 @@ func RegisterRoutes(app *fiber.App) {
 	auth := api.Group("/auth")
 	auth.Post("/signup", authController.Signup)
 	auth.Post("/login", authController.Login)
+	auth.Get("/verify-email", authController.VerifyEmail)
+	auth.Post("/resend-verification", authController.ResendVerificationEmail)
 	auth.Get("/me", middlewares.AuthMiddleware(), authController.GetMe)
 	auth.Post("/change-password", middlewares.AuthMiddleware(), authController.ChangePassword)
 

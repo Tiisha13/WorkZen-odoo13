@@ -21,30 +21,31 @@ const (
 // User represents a registered person in the HRMS system.
 // Each user belongs to a company (except SuperAdmin).
 type User struct {
-	ID               primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	Username         string             `bson:"username" json:"username"`
-	Email            string             `bson:"email" json:"email"`
-	Password         string             `bson:"password" json:"password"`
-	FirstName        string             `bson:"first_name" json:"first_name"`
-	LastName         string             `bson:"last_name" json:"last_name"`
-	Role             Role               `bson:"role" json:"role"` // superadmin | admin | hr | payroll | employee
-	IsSuperAdmin     bool               `bson:"is_super_admin,omitempty" json:"is_super_admin,omitempty"`
-	Designation      string             `bson:"designation,omitempty" json:"designation,omitempty"`
-	DepartmentID     primitive.ObjectID `bson:"department_id,omitempty" json:"department_id,omitempty"`
-	ManagerID        primitive.ObjectID `bson:"manager_id,omitempty" json:"manager_id,omitempty"`
-	EmployeeCode     string             `bson:"employee_code,omitempty" json:"employee_code,omitempty"`
-	DateOfJoin       string             `bson:"date_of_join,omitempty" json:"date_of_join,omitempty"` // YYYY-MM-DD
-	Status           UserStatus         `bson:"status" json:"status"`                                 // active | inactive
-	Phone            string             `bson:"phone,omitempty" json:"phone,omitempty"`
-	Address          Address            `bson:"address,omitempty" json:"address,omitempty"`
-	ProfilePic       string             `bson:"profile_pic,omitempty" json:"profile_pic,omitempty"`
-	ResumeURL        string             `bson:"resume_url,omitempty" json:"resume_url,omitempty"`
-	Company          primitive.ObjectID `bson:"company,omitempty" json:"company,omitempty"`
-	BankDetails      *BankDetails       `bson:"bank_details,omitempty" json:"bank_details,omitempty"`
-	LastLogin        primitive.DateTime `bson:"last_login,omitempty" json:"last_login,omitempty"`
-	EmailVerified    bool               `bson:"email_verified" json:"email_verified"`
-	TwoFactorEnabled bool               `bson:"two_factor_enabled" json:"two_factor_enabled"`
-
+	ID                     primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Username               string             `bson:"username" json:"username"`
+	Email                  string             `bson:"email" json:"email"`
+	Password               string             `bson:"password" json:"password"`
+	FirstName              string             `bson:"first_name" json:"first_name"`
+	LastName               string             `bson:"last_name" json:"last_name"`
+	Role                   Role               `bson:"role" json:"role"` // superadmin | admin | hr | payroll | employee
+	IsSuperAdmin           bool               `bson:"is_super_admin,omitempty" json:"is_super_admin,omitempty"`
+	Designation            string             `bson:"designation,omitempty" json:"designation,omitempty"`
+	DepartmentID           primitive.ObjectID `bson:"department_id,omitempty" json:"department_id,omitempty"`
+	ManagerID              primitive.ObjectID `bson:"manager_id,omitempty" json:"manager_id,omitempty"`
+	EmployeeCode           string             `bson:"employee_code,omitempty" json:"employee_code,omitempty"`
+	DateOfJoin             string             `bson:"date_of_join,omitempty" json:"date_of_join,omitempty"` // YYYY-MM-DD
+	Status                 UserStatus         `bson:"status" json:"status"`                                 // active | inactive
+	Phone                  string             `bson:"phone,omitempty" json:"phone,omitempty"`
+	Address                Address            `bson:"address,omitempty" json:"address,omitempty"`
+	ProfilePic             string             `bson:"profile_pic,omitempty" json:"profile_pic,omitempty"`
+	ResumeURL              string             `bson:"resume_url,omitempty" json:"resume_url,omitempty"`
+	Company                primitive.ObjectID `bson:"company,omitempty" json:"company,omitempty"`
+	BankDetails            *BankDetails       `bson:"bank_details,omitempty" json:"bank_details,omitempty"`
+	LastLogin              primitive.DateTime `bson:"last_login,omitempty" json:"last_login,omitempty"`
+	EmailVerified          bool               `bson:"email_verified" json:"email_verified"`
+	EmailVerificationToken string             `bson:"email_verification_token,omitempty" json:"-"`
+	TokenExpiry            primitive.DateTime `bson:"token_expiry,omitempty" json:"-"`
+	TwoFactorEnabled       bool               `bson:"two_factor_enabled" json:"two_factor_enabled"`
 	TimeStamp
 }
 
