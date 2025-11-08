@@ -85,12 +85,7 @@ func (dc *DocumentController) ListDocuments(c *fiber.Ctx) error {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
 
-	return constants.HTTPSuccess.OK(c, "Documents retrieved successfully", fiber.Map{
-		"documents": documents,
-		"total":     total,
-		"page":      page,
-		"limit":     limit,
-	})
+	return constants.HTTPSuccess.OkWithPagination(c, "Documents retrieved successfully", documents, page, limit, total)
 }
 
 // DeleteDocument removes a document
