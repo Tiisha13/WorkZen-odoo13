@@ -37,7 +37,7 @@ type CreateUserRequest struct {
 }
 
 // CreateUser creates a new user within a company
-func (s *UserService) CreateUser(req *CreateUserRequest, companyID primitive.ObjectID) (*models.User, string, error) {
+func (s *UserService) CreateUser(req *CreateUserRequest, companyID primitive.ObjectID) (*UserResponse, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -120,11 +120,17 @@ func (s *UserService) CreateUser(req *CreateUserRequest, companyID primitive.Obj
 	// Remove password from response
 	user.Password = ""
 
-	return &user, tempPassword, nil
+	// Convert user to response with encrypted IDs
+	userResponse, err := convertUserToResponse(&user)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to prepare user response: %w", err)
+	}
+
+	return userResponse, tempPassword, nil
 }
 
 // ListUsers retrieves users with pagination and filters
-func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string]interface{}, page, limit int64) ([]models.User, int64, error) {
+func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string]interface{}, page, limit int64) ([]UserResponse, int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -150,9 +156,15 @@ func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string
 		return nil, 0, err
 	}
 
-	// Remove passwords
+	// Remove passwords and convert to response with encrypted IDs
+	userResponses := make([]UserResponse, 0, len(users))
 	for i := range users {
 		users[i].Password = ""
+		userResp, err := convertUserToResponse(&users[i])
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to prepare user response: %w", err)
+		}
+		userResponses = append(userResponses, *userResp)
 	}
 
 	total, err := usersCollection.CountDocuments(ctx, filters)
@@ -160,11 +172,11 @@ func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string
 		return nil, 0, err
 	}
 
-	return users, total, nil
+	return userResponses, total, nil
 }
 
 // GetUserByID retrieves a user by ID
-func (s *UserService) GetUserByID(userID primitive.ObjectID) (*models.User, error) {
+func (s *UserService) GetUserByID(userID primitive.ObjectID) (*UserResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -179,7 +191,13 @@ func (s *UserService) GetUserByID(userID primitive.ObjectID) (*models.User, erro
 	// Remove password
 	user.Password = ""
 
-	return &user, nil
+	// Convert user to response with encrypted IDs
+	userResponse, err := convertUserToResponse(&user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare user response: %w", err)
+	}
+
+	return userResponse, nil
 }
 
 // UpdateUserStatus updates user active/inactive status
