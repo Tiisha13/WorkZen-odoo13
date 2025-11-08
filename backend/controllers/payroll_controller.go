@@ -95,12 +95,7 @@ func (pc *PayrollController) ListPayruns(c *fiber.Ctx) error {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
 
-	return constants.HTTPSuccess.OK(c, "Payruns retrieved successfully", fiber.Map{
-		"payruns": payruns,
-		"total":   total,
-		"page":    page,
-		"limit":   limit,
-	})
+	return constants.HTTPSuccess.OkWithPagination(c, "Payruns retrieved successfully", payruns, page, limit, total)
 }
 
 // GetEmployeePayroll retrieves payroll for specific employee and month

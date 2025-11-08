@@ -95,12 +95,7 @@ func (ac *AttendanceController) ListAttendance(c *fiber.Ctx) error {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
 
-	return constants.HTTPSuccess.OK(c, "Attendance list retrieved successfully", fiber.Map{
-		"attendances": attendances,
-		"total":       total,
-		"page":        page,
-		"limit":       limit,
-	})
+	return constants.HTTPSuccess.OkWithPagination(c, "Attendance list retrieved successfully", attendances, page, limit, total)
 } // GetAttendanceSummary retrieves attendance summary statistics
 func (ac *AttendanceController) GetAttendanceSummary(c *fiber.Ctx) error {
 	companyID, err := middlewares.GetAuthCompanyID(c)

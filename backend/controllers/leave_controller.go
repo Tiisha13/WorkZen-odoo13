@@ -69,12 +69,7 @@ func (lc *LeaveController) ListLeaves(c *fiber.Ctx) error {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
 
-	return constants.HTTPSuccess.OK(c, "Leaves retrieved successfully", fiber.Map{
-		"leaves": leaves,
-		"total":  total,
-		"page":   page,
-		"limit":  limit,
-	})
+	return constants.HTTPSuccess.OkWithPagination(c, "Leaves retrieved successfully", leaves, page, limit, total)
 }
 
 // ApproveLeave approves a leave request

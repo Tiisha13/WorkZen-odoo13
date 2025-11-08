@@ -60,12 +60,7 @@ func (uc *UserController) ListUsers(c *fiber.Ctx) error {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
 
-	return constants.HTTPSuccess.OK(c, "Users retrieved successfully", fiber.Map{
-		"users": users,
-		"total": total,
-		"page":  page,
-		"limit": limit,
-	})
+	return constants.HTTPSuccess.OkWithPagination(c, "Users retrieved successfully", users, page, limit, total)
 }
 
 // GetUserByID retrieves a user by ID

@@ -44,12 +44,7 @@ func (cc *CompanyController) ListCompanies(c *fiber.Ctx) error {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
 
-	return constants.HTTPSuccess.OK(c, "Companies retrieved successfully", fiber.Map{
-		"companies": companies,
-		"total":     total,
-		"page":      page,
-		"limit":     limit,
-	})
+	return constants.HTTPSuccess.OkWithPagination(c, "Companies retrieved successfully", companies, page, limit, total)
 }
 
 // GetCompanyByID retrieves a company by ID
