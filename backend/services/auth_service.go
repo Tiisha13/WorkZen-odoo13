@@ -128,9 +128,14 @@ func (s *AuthService) Login(req *LoginRequest) (string, *models.User, error) {
 
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
 
-	// Find user by username
+	// Find user by username or email
 	var user models.User
-	err := usersCollection.FindOne(ctx, bson.M{"username": req.Username}).Decode(&user)
+	err := usersCollection.FindOne(ctx, bson.M{
+		"$or": []bson.M{
+			{"username": req.Username},
+			{"email": req.Username},
+		},
+	}).Decode(&user)
 	if err != nil {
 		return "", nil, errors.New("invalid username or password")
 	}
