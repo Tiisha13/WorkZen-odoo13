@@ -30,7 +30,7 @@ type CreateCompanyRequest struct {
 }
 
 // CreateCompany creates a new company (SuperAdmin only)
-func (s *CompanyService) CreateCompany(req *CreateCompanyRequest) (*models.Company, error) {
+func (s *CompanyService) CreateCompany(req *CreateCompanyRequest) (*CompanyResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -63,11 +63,17 @@ func (s *CompanyService) CreateCompany(req *CreateCompanyRequest) (*models.Compa
 		return nil, fmt.Errorf("failed to create company: %w", err)
 	}
 
-	return &company, nil
+	// Convert to response with encrypted IDs
+	companyResponse, err := convertCompanyToResponse(&company)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare company response: %w", err)
+	}
+
+	return companyResponse, nil
 }
 
 // ListCompanies retrieves all companies with pagination
-func (s *CompanyService) ListCompanies(page, limit int64) ([]models.Company, int64, error) {
+func (s *CompanyService) ListCompanies(page, limit int64) ([]CompanyResponse, int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -87,16 +93,26 @@ func (s *CompanyService) ListCompanies(page, limit int64) ([]models.Company, int
 		return nil, 0, err
 	}
 
+	// Convert to response with encrypted IDs
+	companyResponses := make([]CompanyResponse, 0, len(companies))
+	for i := range companies {
+		companyResp, err := convertCompanyToResponse(&companies[i])
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to prepare company response: %w", err)
+		}
+		companyResponses = append(companyResponses, *companyResp)
+	}
+
 	total, err := companiesCollection.CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return companies, total, nil
+	return companyResponses, total, nil
 }
 
 // GetCompanyByID retrieves a company by ID
-func (s *CompanyService) GetCompanyByID(companyID primitive.ObjectID) (*models.Company, error) {
+func (s *CompanyService) GetCompanyByID(companyID primitive.ObjectID) (*CompanyResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -108,7 +124,13 @@ func (s *CompanyService) GetCompanyByID(companyID primitive.ObjectID) (*models.C
 		return nil, errors.New("company not found")
 	}
 
-	return &company, nil
+	// Convert to response with encrypted IDs
+	companyResponse, err := convertCompanyToResponse(&company)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare company response: %w", err)
+	}
+
+	return companyResponse, nil
 }
 
 // ApproveCompany approves a pending company signup
@@ -127,7 +149,7 @@ func (s *CompanyService) ApproveCompany(companyID, approvedByID primitive.Object
 			"$set": bson.M{
 				"is_approved": true,
 				"approved_by": approvedByID,
-				"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+				"updated_at":  primitive.NewDateTimeFromTime(time.Now()),
 			},
 		},
 	)

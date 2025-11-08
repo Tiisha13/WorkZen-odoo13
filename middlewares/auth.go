@@ -11,6 +11,7 @@ import (
 	"api.workzen.odoo/databases"
 	"api.workzen.odoo/databases/collections"
 	"api.workzen.odoo/databases/models"
+	"api.workzen.odoo/encryptions"
 	"api.workzen.odoo/helpers"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -40,17 +41,23 @@ func AuthMiddleware() fiber.Handler {
 			return constants.HTTPErrors.Unauthorized(c, "Invalid or expired token")
 		}
 
-		// Extract user ID from claims
-		userIDStr, ok := claims["id"].(string)
+		// Extract encrypted user ID from claims and decrypt it
+		encryptedUserID, ok := claims["id"].(string)
 		if !ok {
 			return constants.HTTPErrors.Unauthorized(c, "Invalid token claims")
+		}
+
+		// Decrypt user ID
+		userIDStr, err := encryptions.DecryptID(encryptedUserID)
+		if err != nil {
+			return constants.HTTPErrors.Unauthorized(c, "Invalid user ID in token")
 		}
 
 		userID, err := primitive.ObjectIDFromHex(userIDStr)
 		if err != nil {
 			return constants.HTTPErrors.Unauthorized(c, "Invalid user ID in token")
-		}
-
+		} 
+		
 		// Fetch user from database
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

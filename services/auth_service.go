@@ -347,13 +347,26 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 		}
 	}
 
-	// Generate JWT token
+	// Generate JWT token with encrypted IDs
 	expireTime := time.Now().Add(helpers.JWTExpireDuration)
+
+	// Encrypt user ID for JWT
+	encryptedUserID, err := encryptions.EncryptID(user.ID.Hex())
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt user ID for JWT: %w", err)
+	}
+
+	// Encrypt company ID for JWT
+	encryptedCompanyID, err := encryptions.EncryptID(user.Company.Hex())
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt company ID for JWT: %w", err)
+	}
+
 	payload := map[string]any{
-		"id":             user.ID.Hex(),
+		"id":             encryptedUserID,
 		"username":       user.Username,
 		"role":           user.Role,
-		"company":        user.Company.Hex(),
+		"company":        encryptedCompanyID,
 		"is_super_admin": user.IsSuperAdmin,
 	}
 
