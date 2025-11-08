@@ -94,7 +94,7 @@ export default function LeavesPage() {
 
   const handleApprove = async (id: string) => {
     try {
-      await apiService.put(`${API_ENDPOINTS.LEAVES}/${id}/approve`, {
+      await apiService.patch(`${API_ENDPOINTS.LEAVES}/${id}/approve`, {
         status: "approved",
       });
       toast.success("Leave approved");
@@ -107,7 +107,7 @@ export default function LeavesPage() {
 
   const handleReject = async (id: string) => {
     try {
-      await apiService.put(`${API_ENDPOINTS.LEAVES}/${id}/reject`, {
+      await apiService.patch(`${API_ENDPOINTS.LEAVES}/${id}/reject`, {
         status: "rejected",
       });
       toast.success("Leave rejected");
@@ -136,28 +136,80 @@ export default function LeavesPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800",
+    const config: Record<
+      string,
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+        className?: string;
+      }
+    > = {
+      pending: {
+        variant: "outline",
+        label: "Pending",
+        className: "border-yellow-200 bg-yellow-50 text-yellow-700",
+      },
+      approved: {
+        variant: "outline",
+        label: "Approved",
+        className: "border-green-200 bg-green-50 text-green-700",
+      },
+      rejected: {
+        variant: "outline",
+        label: "Rejected",
+        className: "border-red-200 bg-red-50 text-red-700",
+      },
+    };
+    const conf = config[status] || {
+      variant: "secondary" as const,
+      label: status,
+      className: "",
     };
     return (
-      <Badge className={colors[status] || "bg-gray-100 text-gray-800"}>
-        {status.toUpperCase()}
+      <Badge variant={conf.variant} className={conf.className}>
+        {conf.label}
       </Badge>
     );
   };
 
   const getTypeBadge = (type: string) => {
-    const colors: Record<string, string> = {
-      sick: "bg-blue-100 text-blue-800",
-      casual: "bg-purple-100 text-purple-800",
-      annual: "bg-green-100 text-green-800",
-      unpaid: "bg-gray-100 text-gray-800",
+    const config: Record<
+      string,
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+        className?: string;
+      }
+    > = {
+      sick: {
+        variant: "outline",
+        label: "Sick",
+        className: "border-blue-200 bg-blue-50 text-blue-700",
+      },
+      casual: {
+        variant: "outline",
+        label: "Casual",
+        className: "border-purple-200 bg-purple-50 text-purple-700",
+      },
+      annual: {
+        variant: "outline",
+        label: "Annual",
+        className: "border-green-200 bg-green-50 text-green-700",
+      },
+      unpaid: {
+        variant: "outline",
+        label: "Unpaid",
+        className: "border-gray-200 bg-gray-50 text-gray-700",
+      },
+    };
+    const conf = config[type] || {
+      variant: "secondary" as const,
+      label: type,
+      className: "",
     };
     return (
-      <Badge className={colors[type] || "bg-gray-100 text-gray-800"}>
-        {type.toUpperCase()}
+      <Badge variant={conf.variant} className={conf.className}>
+        {conf.label}
       </Badge>
     );
   };
@@ -168,11 +220,15 @@ export default function LeavesPage() {
     user?.role === "superadmin";
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="flex flex-col gap-6 p-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Leave Management</h1>
-          <p className="text-muted-foreground">Request and manage leaves</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Leave Management
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Request and manage leaves
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -257,7 +313,7 @@ export default function LeavesPage() {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg">
+      <div className="bg-card rounded-lg border shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -278,56 +334,69 @@ export default function LeavesPage() {
               <TableRow>
                 <TableCell
                   colSpan={canApprove ? 8 : 7}
-                  className="text-center py-8"
+                  className="h-32 text-center"
                 >
-                  Loading...
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : leaves.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={canApprove ? 8 : 7}
-                  className="text-center py-8 text-muted-foreground"
+                  className="h-32 text-center"
                 >
-                  No leave requests found
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <p className="text-sm">No leave requests found</p>
+                    <p className="text-xs mt-1">
+                      Submit a new leave request to get started
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               leaves.map((leave) => (
-                <TableRow key={leave.id}>
+                <TableRow key={leave.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium">
                     {leave.user?.first_name} {leave.user?.last_name}
                   </TableCell>
                   <TableCell>{getTypeBadge(leave.leave_type)}</TableCell>
-                  <TableCell>{formatDate(leave.start_date)}</TableCell>
-                  <TableCell>{formatDate(leave.end_date)}</TableCell>
-                  <TableCell>{leave.days || 0}</TableCell>
-                  <TableCell className="max-w-xs truncate">
+                  <TableCell className="text-sm">
+                    {formatDate(leave.start_date)}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {formatDate(leave.end_date)}
+                  </TableCell>
+                  <TableCell className="text-sm">{leave.days || 0}</TableCell>
+                  <TableCell className="max-w-xs truncate text-sm">
                     {leave.reason}
                   </TableCell>
                   <TableCell>{getStatusBadge(leave.status)}</TableCell>
                   {canApprove && (
-                    <TableCell className="text-right space-x-2">
-                      {leave.status === "pending" && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleApprove(leave.id)}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <IconCheck className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleReject(leave.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <IconX className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {leave.status === "pending" && (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleApprove(leave.id)}
+                              className="h-8 w-8 text-green-600 hover:text-green-700"
+                            >
+                              <IconCheck className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleReject(leave.id)}
+                              className="h-8 w-8 text-red-600 hover:text-red-700"
+                            >
+                              <IconX className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>

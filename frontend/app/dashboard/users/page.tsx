@@ -52,7 +52,7 @@ import { Badge } from "@/components/ui/badge";
 import { IconPlus, IconEdit, IconTrash, IconSearch } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { useMediaQuery, usePageTitle, useRequireAuth } from "@/lib/hooks";
-import type { User } from "@/lib/types";
+import type { User, Department } from "@/lib/types";
 
 export default function UsersPage() {
   usePageTitle("User Management | WorkZen");
@@ -74,6 +74,8 @@ export default function UsersPage() {
   const [role, setRole] = useState("employee");
   const [designation, setDesignation] = useState("");
   const [phone, setPhone] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   const currentUser = apiService.getUser();
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -81,7 +83,20 @@ export default function UsersPage() {
   useEffect(() => {
     setMounted(true);
     fetchUsers();
+    fetchDepartments();
   }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await apiService.get<{
+        success: boolean;
+        data: Department[];
+      }>(API_ENDPOINTS.DEPARTMENTS);
+      setDepartments(response.data || []);
+    } catch (error) {
+      console.error("Failed to fetch departments:", error);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -125,6 +140,7 @@ export default function UsersPage() {
       role,
       designation,
       phone,
+      department_id: departmentId || undefined,
     };
 
     try {
@@ -179,6 +195,7 @@ export default function UsersPage() {
     setRole("employee");
     setDesignation("");
     setPhone("");
+    setDepartmentId("");
     setEditingUser(null);
   };
 
@@ -191,6 +208,7 @@ export default function UsersPage() {
     setRole(user.role);
     setDesignation(user.designation || "");
     setPhone(user.phone || "");
+    setDepartmentId(user.department_id || "");
     setIsDialogOpen(true);
   };
 
@@ -331,6 +349,21 @@ export default function UsersPage() {
           onChange={(e) => setDesignation(e.target.value)}
           placeholder="Software Engineer"
         />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="department">Department</Label>
+        <Select value={departmentId} onValueChange={setDepartmentId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select department" />
+          </SelectTrigger>
+          <SelectContent>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.id}>
+                {dept.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="phone">Phone</Label>

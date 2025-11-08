@@ -27,10 +27,14 @@ export function DashboardStats() {
     const fetchData = async () => {
       try {
         const user = apiService.getUser();
-        const endpoint =
-          user?.role === "superadmin"
-            ? API_ENDPOINTS.DASHBOARD_SUPERADMIN
-            : API_ENDPOINTS.DASHBOARD;
+
+        // Select endpoint based on role
+        let endpoint = API_ENDPOINTS.DASHBOARD; // Default for all users
+        if (user?.role === "superadmin") {
+          endpoint = API_ENDPOINTS.DASHBOARD_SUPERADMIN;
+        } else if (user?.role === "admin") {
+          endpoint = API_ENDPOINTS.DASHBOARD_ADMIN;
+        }
 
         const result = await apiService.get<{
           success: boolean;

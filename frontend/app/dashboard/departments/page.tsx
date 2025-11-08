@@ -68,7 +68,7 @@ export default function DepartmentsPage() {
     e.preventDefault();
     try {
       if (editingDept) {
-        await apiService.put(
+        await apiService.patch(
           `${API_ENDPOINTS.DEPARTMENTS}/${editingDept.id}`,
           formData
         );
