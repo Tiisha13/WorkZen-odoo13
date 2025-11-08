@@ -69,11 +69,6 @@ func VerifyJWT(tokenString string) (bool, map[string]any, error) {
 		return false, nil, ErrExpiredToken
 	}
 
-	// Verify user logout time
-	if err := verifyLogoutTime(claims); err != nil {
-		return false, nil, err
-	}
-
 	return true, claims, nil
 }
 
@@ -87,33 +82,4 @@ func verifyExpiry(claims jwt.MapClaims) bool {
 
 	now := time.Now().Unix()
 	return now <= int64(exp) && now >= int64(iat)
-}
-
-func verifyLogoutTime(claims jwt.MapClaims) error {
-	// uidStr, ok := claims["uid"].(string)
-	// if !ok {
-	// 	return ErrInvalidUserID
-	// }
-
-	// uoid, err := encryptions.DecryptID(uidStr)
-	// if err != nil {
-	// 	return fmt.Errorf("%w: %v", ErrInvalidUserID, err)
-	// }
-
-	// userID, err := ObjectId(uoid)
-	// if err != nil {
-	// 	return fmt.Errorf("%w: %v", ErrInvalidUserID, err)
-	// }
-
-	// logoutTime, err := functions.GetCachedLastLogout(userID)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to get logout time: %w", err)
-	// }
-
-	// iat, ok := claims["iat"].(float64)
-	// if !ok || int64(iat) < logoutTime.Unix() {
-	// 	return ErrExpiredToken
-	// }
-
-	return nil
 }
