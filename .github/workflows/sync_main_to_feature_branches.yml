@@ -1,0 +1,55 @@
+# This workflow syncs changes from 'main' back to the 'frontend' and 'backend' branches.
+# It runs when you push a MANUAL commit to 'main'.
+#
+# *** IT WILL NOT RUN on commits from your other sync workflows, to prevent a loop. ***
+
+name: Sync Main to Feature Branches
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # JOB 1: Sync the /frontend folder on 'main' back to the 'frontend' branch
+  sync-to-frontend:
+    # THIS IS THE KEY:
+    # This 'if' condition checks the commit message.
+    # It will NOT run this job if the commit message contains "Sync frontend:"
+    # or "Sync backend:", which are the messages from your other workflows.
+    if: "!contains(github.event.head_commit.message, 'Sync frontend:') && !contains(github.event.head_commit.message, 'Sync backend:')"
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main Branch
+        uses: actions/checkout@v4
+
+      - name: Push /frontend folder to frontend branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.TOKEN }}
+          branch: frontend # The destination branch
+          folder: frontend # The source folder from 'main'
+          target-folder: . # Push to the root of the 'frontend' branch
+          clean: true # Make the 'frontend' branch an exact copy of the '/frontend' folder
+          commit-message: "Sync from main: ${{ github.event.head_commit.message }}"
+
+  # JOB 2: Sync the /backend folder on 'main' back to the 'backend' branch
+  sync-to-backend:
+    # We use the exact same 'if' condition to prevent loops
+    if: "!contains(github.event.head_commit.message, 'Sync frontend:') && !contains(github.event.head_commit.message, 'Sync backend:')"
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main Branch
+        uses: actions/checkout@v4
+
+      - name: Push /backend folder to backend branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.TOKEN }}
+          branch: backend # The destination branch
+          folder: backend # The source folder from 'main'
+          target-folder: . # Push to the root of the 'backend' branch
+          clean: true # Make the 'backend' branch an exact copy of the '/backend' folder
+          commit-message: "Sync from main: ${{ github.event.head_commit.message }}"
