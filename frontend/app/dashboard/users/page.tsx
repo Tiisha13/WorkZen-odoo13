@@ -77,6 +77,7 @@ export default function UsersPage() {
     phone: "",
   });
 
+  const currentUser = apiService.getUser();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
@@ -231,6 +232,7 @@ export default function UsersPage() {
             setFormData({ ...formData, first_name: e.target.value })
           }
           required
+          placeholder="Enter first name"
         />
       </div>
       <div className="space-y-2">
@@ -242,6 +244,7 @@ export default function UsersPage() {
             setFormData({ ...formData, last_name: e.target.value })
           }
           required
+          placeholder="Enter last name"
         />
       </div>
       <div className="space-y-2">
@@ -254,6 +257,7 @@ export default function UsersPage() {
           }
           required
           disabled={!!editingUser}
+          placeholder="johndoe"
         />
       </div>
       <div className="space-y-2">
@@ -264,36 +268,55 @@ export default function UsersPage() {
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           required
+          placeholder="test@gmail.com"
         />
       </div>
-      {!editingUser && (
-        <div className="space-y-2">
-          <Label htmlFor="password">Password *</Label>
-          <Input
-            id="password"
-            type="password"
-            value={formData.password}
-            onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
+      <div className="space-y-2">
+        <Label htmlFor="password">Password {!editingUser && "*"}</Label>
+        <Input
+          id="password"
+          type="password"
+          value={formData.password}
+          onChange={(e) =>
+            setFormData({ ...formData, password: e.target.value })
+          }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
             }
-            required={!editingUser}
-          />
-        </div>
-      )}
+          }}
+          required={!editingUser}
+          placeholder="••••••••"
+        />
+      </div>
       <div className="space-y-2">
         <Label htmlFor="role">Role *</Label>
         <Select
           value={formData.role}
           onValueChange={(value) => setFormData({ ...formData, role: value })}
         >
-          <SelectTrigger>
-            <SelectValue />
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="employee">Employee</SelectItem>
-            <SelectItem value="hr">HR</SelectItem>
-            <SelectItem value="payroll">Payroll</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
+            {currentUser?.role === "superadmin" && (
+              <>
+                <SelectItem value="employee">Employee</SelectItem>
+                <SelectItem value="hr">HR</SelectItem>
+                <SelectItem value="payroll">Payroll</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </>
+            )}
+            {currentUser?.role === "admin" && (
+              <>
+                <SelectItem value="employee">Employee</SelectItem>
+                <SelectItem value="hr">HR</SelectItem>
+                <SelectItem value="payroll">Payroll</SelectItem>
+              </>
+            )}
+            {currentUser?.role === "hr" && (
+              <SelectItem value="employee">Employee</SelectItem>
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -305,14 +328,17 @@ export default function UsersPage() {
           onChange={(e) =>
             setFormData({ ...formData, designation: e.target.value })
           }
+          placeholder="Software Engineer"
         />
       </div>
       <div className="space-y-2">
         <Label htmlFor="phone">Phone</Label>
         <Input
           id="phone"
+          type="tel"
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          placeholder="+1234567890"
         />
       </div>
     </div>
