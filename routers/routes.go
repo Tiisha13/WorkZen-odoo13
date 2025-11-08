@@ -12,6 +12,7 @@ func RegisterRoutes(app *fiber.App) {
 	authController := controllers.NewAuthController()
 	companyController := controllers.NewCompanyController()
 	userController := controllers.NewUserController()
+	departmentController := controllers.NewDepartmentController()
 	attendanceController := controllers.NewAttendanceController()
 	leaveController := controllers.NewLeaveController()
 	salaryController := controllers.NewSalaryController()
@@ -57,6 +58,15 @@ func RegisterRoutes(app *fiber.App) {
 	users.Patch("/:id/status", middlewares.RequireCompanyAdmin(), userController.UpdateUserStatus)
 	users.Patch("/:id/bank", userController.UpdateBankDetails)
 	users.Delete("/:id", middlewares.RequireCompanyAdmin(), userController.DeleteUser)
+
+	// ==================== DEPARTMENT ROUTES ====================
+	departments := api.Group("/departments")
+	departments.Use(middlewares.AuthMiddleware())
+	departments.Post("/", middlewares.RequireHROrAdmin(), departmentController.CreateDepartment)
+	departments.Get("/", departmentController.ListDepartments)
+	departments.Get("/:id", departmentController.GetDepartmentByID)
+	departments.Patch("/:id", middlewares.RequireHROrAdmin(), departmentController.UpdateDepartment)
+	departments.Delete("/:id", middlewares.RequireCompanyAdmin(), departmentController.DeleteDepartment)
 
 	// ==================== ATTENDANCE ROUTES ====================
 	attendance := api.Group("/attendance")

@@ -142,6 +142,29 @@
             ]
         },
         {
+            "name": "Departments (View Only)",
+            "item": [
+                {
+                    "name": "List All Departments",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/departments",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments"
+                            ]
+                        },
+                        "description": "View all departments in the company"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
             "name": "Attendance",
             "item": [
                 {
