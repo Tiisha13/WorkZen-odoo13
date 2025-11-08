@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
 import { apiService } from "@/lib/api-service";
 import { API_ENDPOINTS } from "@/lib/config";
+import { BankDetails } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -33,6 +34,7 @@ import {
   IconCurrencyDollar,
   IconBuildingBank,
   IconEdit,
+  IconReport,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -45,14 +47,6 @@ interface Salary {
   is_active: boolean;
 }
 
-interface BankDetails {
-  account_holder_name?: string;
-  account_number?: string;
-  bank_name?: string;
-  ifsc_code?: string;
-  branch_name?: string;
-}
-
 export default function ProfilePage() {
   usePageTitle("User Profile | WorkZen");
   useRequireAuth();
@@ -62,11 +56,12 @@ export default function ProfilePage() {
   const [loadingSalary, setLoadingSalary] = useState(true);
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [bankDetails, setBankDetails] = useState<BankDetails>({
-    account_holder_name: "",
     account_number: "",
     bank_name: "",
     ifsc_code: "",
     branch_name: "",
+    pan_no: "",
+    uan_no: "",
   });
 
   useEffect(() => {
@@ -75,6 +70,20 @@ export default function ProfilePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  // Load bank details from user object
+  useEffect(() => {
+    if (user?.bank_details) {
+      setBankDetails({
+        account_number: user.bank_details.account_number || "",
+        bank_name: user.bank_details.bank_name || "",
+        ifsc_code: user.bank_details.ifsc_code || "",
+        branch_name: user.bank_details.branch_name || "",
+        pan_no: user.bank_details.pan_no || "",
+        uan_no: user.bank_details.uan_no || "",
+      });
+    }
+  }, [user?.bank_details]);
 
   const fetchSalary = async () => {
     if (!user?.id) return;
@@ -100,14 +109,18 @@ export default function ProfilePage() {
 
     try {
       await apiService.patch(`${API_ENDPOINTS.USERS}/${user.id}/bank`, {
-        account_holder_name: bankDetails.account_holder_name,
         account_number: bankDetails.account_number,
         bank_name: bankDetails.bank_name,
         ifsc_code: bankDetails.ifsc_code,
         branch_name: bankDetails.branch_name,
+        pan_no: bankDetails.pan_no,
+        uan_no: bankDetails.uan_no,
       });
       toast.success("Bank details updated successfully");
       setIsBankDialogOpen(false);
+
+      // Refresh user data to show updated bank details
+      window.location.reload();
     } catch (error) {
       const message =
         error instanceof Error
@@ -247,11 +260,25 @@ export default function ProfilePage() {
         {/* Salary Information Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconCurrencyDollar className="w-5 h-5" />
-              Salary Information
-            </CardTitle>
-            <CardDescription>Your current salary structure</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <IconCurrencyDollar className="w-5 h-5" />
+                  Salary Information
+                </CardTitle>
+                <CardDescription>Your current salary structure</CardDescription>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  toast.info("Salary reports feature coming soon!");
+                }}
+              >
+                <IconReport className="w-4 h-4 mr-2" />
+                View Reports
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingSalary ? (
@@ -337,14 +364,6 @@ export default function ProfilePage() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Account Holder Name
-                </p>
-                <p className="font-medium">
-                  {bankDetails.account_holder_name || "Not provided"}
-                </p>
-              </div>
-              <div>
                 <p className="text-sm text-muted-foreground">Account Number</p>
                 <p className="font-medium">
                   {bankDetails.account_number
@@ -370,6 +389,18 @@ export default function ProfilePage() {
                   {bankDetails.branch_name || "Not provided"}
                 </p>
               </div>
+              <div>
+                <p className="text-sm text-muted-foreground">PAN Number</p>
+                <p className="font-medium">
+                  {bankDetails.pan_no || "Not provided"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">UAN Number</p>
+                <p className="font-medium">
+                  {bankDetails.uan_no || "Not provided"}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -385,23 +416,6 @@ export default function ProfilePage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleBankDetailsSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="account_holder_name">
-                Account Holder Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="account_holder_name"
-                value={bankDetails.account_holder_name}
-                onChange={(e) =>
-                  setBankDetails({
-                    ...bankDetails,
-                    account_holder_name: e.target.value,
-                  })
-                }
-                placeholder="John Doe"
-                required
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="account_number">
                 Account Number <span className="text-destructive">*</span>
@@ -459,6 +473,34 @@ export default function ProfilePage() {
                   })
                 }
                 placeholder="Main Branch"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pan_no">PAN Number</Label>
+              <Input
+                id="pan_no"
+                value={bankDetails.pan_no}
+                onChange={(e) =>
+                  setBankDetails({
+                    ...bankDetails,
+                    pan_no: e.target.value,
+                  })
+                }
+                placeholder="ABCDE1234F"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="uan_no">UAN Number</Label>
+              <Input
+                id="uan_no"
+                value={bankDetails.uan_no}
+                onChange={(e) =>
+                  setBankDetails({
+                    ...bankDetails,
+                    uan_no: e.target.value,
+                  })
+                }
+                placeholder="123456789012"
               />
             </div>
             <DialogFooter className="gap-2">
