@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
   ATTENDANCES: `${API_BASE_URL}${API_VERSION}/attendance/me`,
   ATTENDANCE_CHECKIN: `${API_BASE_URL}${API_VERSION}/attendance/check-in`,
   ATTENDANCE_CHECKOUT: `${API_BASE_URL}${API_VERSION}/attendance/check-out`,
+  ATTENDANCE_RESET: `${API_BASE_URL}${API_VERSION}/attendance/reset`,
   ATTENDANCE_LIST: `${API_BASE_URL}${API_VERSION}/attendance`,
 
   // Leaves
@@ -41,7 +42,8 @@ export const API_ENDPOINTS = {
   COMPANIES: `${API_BASE_URL}${API_VERSION}/companies`,
 
   // Dashboard
-  DASHBOARD: `${API_BASE_URL}${API_VERSION}/dashboard/admin`,
+  DASHBOARD: `${API_BASE_URL}${API_VERSION}/dashboard`,
+  DASHBOARD_ADMIN: `${API_BASE_URL}${API_VERSION}/dashboard/admin`,
   DASHBOARD_SUPERADMIN: `${API_BASE_URL}${API_VERSION}/dashboard/superadmin`,
 };
 

@@ -156,6 +156,29 @@ export default function AttendancePage() {
     }
   };
 
+  const handleReset = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to reset today's attendance? This will allow you to check in again."
+      )
+    ) {
+      return;
+    }
+    try {
+      setCheckingIn(true);
+      await apiService.delete(API_ENDPOINTS.ATTENDANCE_RESET);
+      toast.success("Attendance reset successfully! You can check in again.");
+      setTodayAttendance(null);
+      fetchAttendances();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reset attendance"
+      );
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
   const formatTime = (timeString: string | undefined) => {
     if (!timeString) return "-";
     try {
@@ -332,27 +355,47 @@ export default function AttendancePage() {
                 </p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {!todayAttendance ? (
                 <Button onClick={handleCheckIn} disabled={checkingIn} size="sm">
                   <IconClock className="w-4 h-4 mr-2" />
                   {checkingIn ? "Checking In..." : "Check In"}
                 </Button>
               ) : !todayAttendance.check_out ? (
-                <Button
-                  onClick={handleCheckOut}
-                  disabled={checkingIn}
-                  variant="destructive"
-                  size="sm"
-                >
-                  <IconClockStop className="w-4 h-4 mr-2" />
-                  {checkingIn ? "Checking Out..." : "Check Out"}
-                </Button>
+                <>
+                  <Button
+                    onClick={handleCheckOut}
+                    disabled={checkingIn}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    <IconClockStop className="w-4 h-4 mr-2" />
+                    {checkingIn ? "Checking Out..." : "Check Out"}
+                  </Button>
+                  <Button
+                    onClick={handleReset}
+                    disabled={checkingIn}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Reset
+                  </Button>
+                </>
               ) : (
-                <Badge variant="outline" className="text-green-600 px-4 py-2">
-                  <IconCalendar className="w-4 h-4 mr-2" />
-                  Completed
-                </Badge>
+                <>
+                  <Badge variant="outline" className="text-green-600 px-4 py-2">
+                    <IconCalendar className="w-4 h-4 mr-2" />
+                    Completed
+                  </Badge>
+                  <Button
+                    onClick={handleReset}
+                    disabled={checkingIn}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Reset
+                  </Button>
+                </>
               )}
             </div>
           </div>

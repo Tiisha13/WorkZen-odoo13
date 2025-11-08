@@ -2,6 +2,9 @@
 
 import { useRequireAuth, usePageTitle } from "@/lib/hooks";
 import { useAuth } from "@/lib/auth-context";
+import { useState, useEffect } from "react";
+import { apiService } from "@/lib/api-service";
+import { API_ENDPOINTS } from "@/lib/config";
 import {
   Card,
   CardContent,
@@ -10,18 +13,116 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   IconMail,
   IconPhone,
   IconBriefcase,
   IconBuilding,
   IconUser,
+  IconCurrencyDollar,
+  IconBuildingBank,
+  IconEdit,
 } from "@tabler/icons-react";
+import { toast } from "sonner";
+
+interface Salary {
+  id: string;
+  monthly_wage: number;
+  yearly_wage: number;
+  currency: string;
+  effective_from: string;
+  is_active: boolean;
+}
+
+interface BankDetails {
+  account_holder_name?: string;
+  account_number?: string;
+  bank_name?: string;
+  ifsc_code?: string;
+  branch_name?: string;
+}
 
 export default function ProfilePage() {
   usePageTitle("User Profile | WorkZen");
   useRequireAuth();
   const { user, company } = useAuth();
+
+  const [salary, setSalary] = useState<Salary | null>(null);
+  const [loadingSalary, setLoadingSalary] = useState(true);
+  const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
+  const [bankDetails, setBankDetails] = useState<BankDetails>({
+    account_holder_name: "",
+    account_number: "",
+    bank_name: "",
+    ifsc_code: "",
+    branch_name: "",
+  });
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchSalary();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const fetchSalary = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoadingSalary(true);
+      const response = await apiService.get<{ success: boolean; data: Salary }>(
+        `${API_ENDPOINTS.SALARY}/${user.id}`
+      );
+      setSalary(response.data);
+    } catch (error) {
+      console.error("Failed to fetch salary:", error);
+      // Don't show error toast, just silently fail if no salary exists
+    } finally {
+      setLoadingSalary(false);
+    }
+  };
+
+  const handleBankDetailsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user?.id) return;
+
+    try {
+      await apiService.patch(`${API_ENDPOINTS.USERS}/${user.id}/bank`, {
+        account_holder_name: bankDetails.account_holder_name,
+        account_number: bankDetails.account_number,
+        bank_name: bankDetails.bank_name,
+        ifsc_code: bankDetails.ifsc_code,
+        branch_name: bankDetails.branch_name,
+      });
+      toast.success("Bank details updated successfully");
+      setIsBankDialogOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to update bank details";
+      toast.error(message);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
 
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
@@ -142,7 +243,237 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Salary Information Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <IconCurrencyDollar className="w-5 h-5" />
+              Salary Information
+            </CardTitle>
+            <CardDescription>Your current salary structure</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingSalary ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : salary ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Monthly Wage</p>
+                  <p className="text-2xl font-bold">
+                    {formatCurrency(salary.monthly_wage)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Yearly Wage</p>
+                  <p className="text-xl font-semibold">
+                    {formatCurrency(salary.yearly_wage)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Effective From
+                  </p>
+                  <p className="font-medium">
+                    {new Date(salary.effective_from).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge
+                    variant={salary.is_active ? "default" : "secondary"}
+                    className={
+                      salary.is_active
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
+                    }
+                  >
+                    {salary.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <IconCurrencyDollar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No salary information available</p>
+                <p className="text-sm">Contact HR for salary details</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Bank Details Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <IconBuildingBank className="w-5 h-5" />
+                  Bank Details
+                </CardTitle>
+                <CardDescription>
+                  Manage your banking information
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsBankDialogOpen(true)}
+              >
+                <IconEdit className="w-4 h-4 mr-2" />
+                Update
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Account Holder Name
+                </p>
+                <p className="font-medium">
+                  {bankDetails.account_holder_name || "Not provided"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Account Number</p>
+                <p className="font-medium">
+                  {bankDetails.account_number
+                    ? `****${bankDetails.account_number.slice(-4)}`
+                    : "Not provided"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Bank Name</p>
+                <p className="font-medium">
+                  {bankDetails.bank_name || "Not provided"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">IFSC Code</p>
+                <p className="font-medium">
+                  {bankDetails.ifsc_code || "Not provided"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Branch Name</p>
+                <p className="font-medium">
+                  {bankDetails.branch_name || "Not provided"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Bank Details Dialog */}
+      <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Bank Details</DialogTitle>
+            <DialogDescription>
+              Enter your banking information for salary payments
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleBankDetailsSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="account_holder_name">
+                Account Holder Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="account_holder_name"
+                value={bankDetails.account_holder_name}
+                onChange={(e) =>
+                  setBankDetails({
+                    ...bankDetails,
+                    account_holder_name: e.target.value,
+                  })
+                }
+                placeholder="John Doe"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="account_number">
+                Account Number <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="account_number"
+                value={bankDetails.account_number}
+                onChange={(e) =>
+                  setBankDetails({
+                    ...bankDetails,
+                    account_number: e.target.value,
+                  })
+                }
+                placeholder="1234567890"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank_name">
+                Bank Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="bank_name"
+                value={bankDetails.bank_name}
+                onChange={(e) =>
+                  setBankDetails({ ...bankDetails, bank_name: e.target.value })
+                }
+                placeholder="ABC Bank"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ifsc_code">
+                IFSC Code <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="ifsc_code"
+                value={bankDetails.ifsc_code}
+                onChange={(e) =>
+                  setBankDetails({ ...bankDetails, ifsc_code: e.target.value })
+                }
+                placeholder="ABCD0123456"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="branch_name">Branch Name</Label>
+              <Input
+                id="branch_name"
+                value={bankDetails.branch_name}
+                onChange={(e) =>
+                  setBankDetails({
+                    ...bankDetails,
+                    branch_name: e.target.value,
+                  })
+                }
+                placeholder="Main Branch"
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsBankDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
