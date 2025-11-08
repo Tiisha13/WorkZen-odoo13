@@ -1,0 +1,318 @@
+{
+    "info": {
+        "_postman_id": "workzen-superadmin-collection",
+        "name": "WorkZen - SuperAdmin",
+        "description": "SuperAdmin role testing - Platform-wide access to all companies and system management",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{superadmin_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "superadmin_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "company_id",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Login as SuperAdmin",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.token) {",
+                                    "        pm.collectionVariables.set('superadmin_token', jsonData.data.token);",
+                                    "        console.log('SuperAdmin token saved');",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"superadmin@workzen.com\",\n  \"password\": \"SuperAdmin@123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login with SuperAdmin credentials"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/auth/me",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"old_password\": \"SuperAdmin@123\",\n  \"new_password\": \"NewSecurePass123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/change-password",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "change-password"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Company Management",
+            "item": [
+                {
+                    "name": "List All Companies",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.companies && jsonData.data.companies.length > 0) {",
+                                    "        pm.collectionVariables.set('company_id', jsonData.data.companies[0].id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/companies?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "companies"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "View all companies in the system"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Company",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"New Tech Company\",\n  \"email\": \"info@newtech.com\",\n  \"phone\": \"+919876543299\",\n  \"industry\": \"Technology\",\n  \"website\": \"https://newtech.com\",\n  \"address\": {\n    \"street\": \"123 Tech Street\",\n    \"city\": \"Bangalore\",\n    \"state\": \"Karnataka\",\n    \"country\": \"India\",\n    \"zip_code\": \"560001\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/companies",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "companies"
+                            ]
+                        },
+                        "description": "Create a new company"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Company Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/companies/{{company_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "companies",
+                                "{{company_id}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Approve Company",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/companies/{{company_id}}/approve",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "companies",
+                                "{{company_id}}",
+                                "approve"
+                            ]
+                        },
+                        "description": "Approve a pending company"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Deactivate Company",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/companies/{{company_id}}/deactivate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "companies",
+                                "{{company_id}}",
+                                "deactivate"
+                            ]
+                        },
+                        "description": "Deactivate a company"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Platform Dashboard",
+            "item": [
+                {
+                    "name": "SuperAdmin Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/dashboard/superadmin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "dashboard",
+                                "superadmin"
+                            ]
+                        },
+                        "description": "Platform-wide statistics and metrics"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "System Health",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/health",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "health"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,524 @@
+{
+    "info": {
+        "_postman_id": "workzen-payroll-collection",
+        "name": "WorkZen - Payroll",
+        "description": "Payroll role testing - Salary structures, payroll processing, and payment management",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{payroll_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "payroll_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "employee_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "payroll_id",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Login as Payroll",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.token) {",
+                                    "        pm.collectionVariables.set('payroll_token', jsonData.data.token);",
+                                    "        console.log('Payroll token saved');",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"payroll@workzen.com\",\n  \"password\": \"TempPassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login with Payroll credentials"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/auth/me",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"old_password\": \"TempPassword123\",\n  \"new_password\": \"NewPayrollPass123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/change-password",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "change-password"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Employee Records",
+            "item": [
+                {
+                    "name": "List All Users",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.users && jsonData.data.users.length > 0) {",
+                                    "        var employee = jsonData.data.users.find(u => u.role === 'employee');",
+                                    "        if (employee) {",
+                                    "            pm.collectionVariables.set('employee_id', employee.id);",
+                                    "        }",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/users?page=1&limit=20",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "users"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "View all employees"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Employee Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/users/{{employee_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "users",
+                                "{{employee_id}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Bank Details",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"account_number\": \"1234567890\",\n  \"ifsc_code\": \"HDFC0001234\",\n  \"bank_name\": \"HDFC Bank\",\n  \"pan_no\": \"ABCDE1234F\",\n  \"uan_no\": \"123456789012\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/users/{{employee_id}}/bank",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "users",
+                                "{{employee_id}}",
+                                "bank"
+                            ]
+                        },
+                        "description": "Update employee bank details for payroll"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Salary Management",
+            "item": [
+                {
+                    "name": "Create Salary Structure",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"employee_id\": \"{{employee_id}}\",\n  \"monthly_wage\": 50000,\n  \"effective_from\": \"2025-11-01\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/salary-structure",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "salary-structure"
+                            ]
+                        },
+                        "description": "Create salary structure with auto-calculated components"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Salary Structure",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/salary-structure/{{employee_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "salary-structure",
+                                "{{employee_id}}"
+                            ]
+                        },
+                        "description": "View employee's current salary structure"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Salary Structure",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"monthly_wage\": 55000,\n  \"effective_from\": \"2025-12-01\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/salary-structure/{{employee_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "salary-structure",
+                                "{{employee_id}}"
+                            ]
+                        },
+                        "description": "Update salary structure (creates new version)"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Payroll Configuration",
+            "item": [
+                {
+                    "name": "Create Configuration",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pf_employee_percent\": 12.0,\n  \"pf_employer_percent\": 12.0,\n  \"professional_tax\": 200.0,\n  \"default_basic_percent\": 50.0,\n  \"default_hra_percent\": 50.0,\n  \"default_standard_allowance\": 1800.0,\n  \"default_performance_bonus\": 2000.0,\n  \"default_lta\": 1500.0\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/payroll/configuration",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "payroll",
+                                "configuration"
+                            ]
+                        },
+                        "description": "Set up payroll configuration"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Configuration",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/payroll/configuration",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "payroll",
+                                "configuration"
+                            ]
+                        },
+                        "description": "View current payroll configuration"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Payroll Processing",
+            "item": [
+                {
+                    "name": "Create Monthly Payrun",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"month\": \"2025-11\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/payruns",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "payruns"
+                            ]
+                        },
+                        "description": "Generate monthly payroll for all employees"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List All Payruns",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/payruns?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "payruns"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "View all payrun history"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Employee Payroll",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.id) {",
+                                    "        pm.collectionVariables.set('payroll_id', jsonData.data.id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/payrolls/{{employee_id}}?month=2025-11",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "payrolls",
+                                "{{employee_id}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "month",
+                                    "value": "2025-11"
+                                }
+                            ]
+                        },
+                        "description": "Get specific employee's payroll for a month"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Mark Payroll as Paid",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/payrolls/{{payroll_id}}/mark-paid",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "payrolls",
+                                "{{payroll_id}}",
+                                "mark-paid"
+                            ]
+                        },
+                        "description": "Mark a payroll record as paid"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Attendance",
+            "item": [
+                {
+                    "name": "List Attendance",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/attendance?page=1&limit=20",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "attendance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "View attendance for payroll calculations"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

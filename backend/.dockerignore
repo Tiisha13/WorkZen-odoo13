@@ -1,0 +1,73 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Documentation
+README.md
+CONTRIBUTING.md
+CHANGELOG.md
+QUICKSTART.md
+SECURITY.md
+LICENSE
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Configuration
+config.yml
+.env
+.env.local
+
+# Build outputs
+bin/
+dist/
+tmp/
+*.exe
+*.exe~
+
+# Test files
+*_test.go
+testdata/
+
+# Coverage
+coverage.out
+coverage.html
+
+# Dependencies (will be rebuilt in container)
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+temp/
+
+# Air
+.air.toml
+
+# Make
+Makefile
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+dump.rdb
