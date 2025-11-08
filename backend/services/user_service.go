@@ -156,7 +156,9 @@ func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string
 
 	// Add company filter and exclude soft-deleted records
 	filters["company"] = companyID
-	filters["is_deleted"] = false
+
+	// Build query with not-deleted filter
+	query := helpers.AddNotDeletedFilter(filters)
 
 	skip := (page - 1) * limit
 	opts := options.Find().
@@ -164,7 +166,7 @@ func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string
 		SetLimit(limit).
 		SetSort(bson.D{{Key: "created_at", Value: -1}})
 
-	cursor, err := usersCollection.Find(ctx, filters, opts)
+	cursor, err := usersCollection.Find(ctx, query, opts)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -186,7 +188,7 @@ func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string
 		userResponses = append(userResponses, *userResp)
 	}
 
-	total, err := usersCollection.CountDocuments(ctx, filters)
+	total, err := usersCollection.CountDocuments(ctx, query)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -202,7 +204,7 @@ func (s *UserService) GetUserByID(userID primitive.ObjectID) (*UserResponse, err
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
 
 	var user models.User
-	err := usersCollection.FindOne(ctx, bson.M{"_id": userID, "is_deleted": false}).Decode(&user)
+	err := usersCollection.FindOne(ctx, helpers.AddNotDeletedFilter(bson.M{"_id": userID})).Decode(&user)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -230,7 +232,7 @@ func (s *UserService) UpdateUserStatus(userID, authUserID primitive.ObjectID, st
 
 	result, err := usersCollection.UpdateOne(
 		ctx,
-		bson.M{"_id": userID, "is_deleted": false},
+		helpers.AddNotDeletedFilter(bson.M{"_id": userID}),
 		bson.M{
 			"$set": bson.M{
 				"status":     status,
@@ -276,7 +278,7 @@ func (s *UserService) UpdateBankDetails(userID, authUserID primitive.ObjectID, r
 
 	result, err := usersCollection.UpdateOne(
 		ctx,
-		bson.M{"_id": userID, "is_deleted": false},
+		helpers.AddNotDeletedFilter(bson.M{"_id": userID}),
 		bson.M{
 			"$set": bson.M{
 				"bank_details": bankDetails,
@@ -303,7 +305,7 @@ func (s *UserService) DeleteUser(userID, authUserID primitive.ObjectID) error {
 
 	result, err := usersCollection.UpdateOne(
 		ctx,
-		bson.M{"_id": userID, "is_deleted": false},
+		helpers.AddNotDeletedFilter(bson.M{"_id": userID}),
 		bson.M{
 			"$set": bson.M{
 				"status":     models.UserInactive,

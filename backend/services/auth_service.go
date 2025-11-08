@@ -365,7 +365,7 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 
 	// If user belongs to a company, check if company is approved and active
 	if !user.IsSuperAdmin {
-		err = companiesCollection.FindOne(ctx, bson.M{"_id": user.Company, "is_deleted": false}).Decode(&company)
+		err = companiesCollection.FindOne(ctx, helpers.AddNotDeletedFilter(bson.M{"_id": user.Company})).Decode(&company)
 		if err != nil {
 			return nil, errors.New("company not found")
 		}
