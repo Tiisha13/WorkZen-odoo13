@@ -44,7 +44,7 @@ func (uc *UserController) CreateUser(c *fiber.Ctx) error {
 	})
 }
 
-// ListUsers retrieves all users in company
+// ListUsers retrieves all users in company (excluding own account)
 func (uc *UserController) ListUsers(c *fiber.Ctx) error {
 	page, _ := strconv.ParseInt(c.Query("page", "1"), 10, 64)
 	limit, _ := strconv.ParseInt(c.Query("limit", "10"), 10, 64)
@@ -54,10 +54,23 @@ func (uc *UserController) ListUsers(c *fiber.Ctx) error {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
 	}
 
+	// Get authenticated user ID to exclude from results
+	authUserID, err := middlewares.GetAuthUserID(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
 	filters := make(map[string]interface{})
+	// Exclude the authenticated user's own account
+	filters["_id"] = map[string]interface{}{"$ne": authUserID}
+
 	users, total, err := uc.service.ListUsers(companyID, filters, page, limit)
 	if err != nil {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
+	}
+
+	if total == 0 {
+		return constants.HTTPSuccess.OKWithoutData(c, "No users found")
 	}
 
 	return constants.HTTPSuccess.OkWithPagination(c, "Users retrieved successfully", users, page, limit, total)
