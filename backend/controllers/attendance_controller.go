@@ -96,7 +96,22 @@ func (ac *AttendanceController) ListAttendance(c *fiber.Ctx) error {
 	}
 
 	return constants.HTTPSuccess.OkWithPagination(c, "Attendance list retrieved successfully", attendances, page, limit, total)
-} 
+}
+
+// ResetAttendance allows resetting today's attendance
+func (ac *AttendanceController) ResetAttendance(c *fiber.Ctx) error {
+	userID, err := middlewares.GetAuthUserID(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	err = ac.service.ResetAttendance(userID)
+	if err != nil {
+		return constants.HTTPErrors.BadRequest(c, err.Error())
+	}
+
+	return constants.HTTPSuccess.OKWithoutData(c, "Attendance reset successful, you can check in again")
+}
 
 // GetAttendanceSummary retrieves attendance summary statistics
 func (ac *AttendanceController) GetAttendanceSummary(c *fiber.Ctx) error {

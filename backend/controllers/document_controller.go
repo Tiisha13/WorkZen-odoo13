@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"api.workzen.odoo/constants"
+	"api.workzen.odoo/helpers"
 	"api.workzen.odoo/middlewares"
 	"api.workzen.odoo/services"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DocumentController struct {
@@ -73,6 +73,20 @@ func (dc *DocumentController) ListDocuments(c *fiber.Ctx) error {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
 	}
 
+	// Get current user
+	user, err := middlewares.GetAuthUser(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	// For regular employees, filter to show only their own documents
+	// HR and Admin can see all documents
+	if !user.IsSuperAdmin && user.Role != "admin" && user.Role != "hr" {
+		// Override employee_id to current user's ID
+		userID, _ := middlewares.GetAuthUserID(c)
+		employeeID = userID.Hex()
+	}
+
 	req := &services.ListDocumentsRequest{
 		Category:   category,
 		EmployeeID: employeeID,
@@ -91,7 +105,7 @@ func (dc *DocumentController) ListDocuments(c *fiber.Ctx) error {
 // DeleteDocument removes a document
 func (dc *DocumentController) DeleteDocument(c *fiber.Ctx) error {
 	id := c.Params("id")
-	documentID, err := primitive.ObjectIDFromHex(id)
+	documentID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid document ID")
 	}

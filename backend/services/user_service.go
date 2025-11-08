@@ -139,7 +139,7 @@ func (s *UserService) CreateUser(req *CreateUserRequest, companyID, authUserID p
 	user.Password = ""
 
 	// Convert user to response with encrypted IDs
-	userResponse, err := convertUserToResponse(&user)
+	userResponse, err := ConvertUserToResponse(&user)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to prepare user response: %w", err)
 	}
@@ -181,7 +181,7 @@ func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string
 	userResponses := make([]UserResponse, 0, len(users))
 	for i := range users {
 		users[i].Password = ""
-		userResp, err := convertUserToResponse(&users[i])
+		userResp, err := ConvertUserToResponse(&users[i])
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to prepare user response: %w", err)
 		}
@@ -213,12 +213,75 @@ func (s *UserService) GetUserByID(userID primitive.ObjectID) (*UserResponse, err
 	user.Password = ""
 
 	// Convert user to response with encrypted IDs
-	userResponse, err := convertUserToResponse(&user)
+	userResponse, err := ConvertUserToResponse(&user)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare user response: %w", err)
 	}
 
 	return userResponse, nil
+}
+
+// UpdateUserRequest for updating user details
+type UpdateUserRequest struct {
+	FirstName    string              `json:"first_name"`
+	LastName     string              `json:"last_name"`
+	Email        string              `json:"email"`
+	Phone        string              `json:"phone"`
+	Role         models.Role         `json:"role"`
+	Designation  string              `json:"designation"`
+	DepartmentID *primitive.ObjectID `json:"department_id"`
+	Password     string              `json:"password"` // Optional - only update if provided
+}
+
+// UpdateUser updates user details
+func (s *UserService) UpdateUser(userID, authUserID primitive.ObjectID, req *UpdateUserRequest) (*UserResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
+
+	// Build update document
+	updateDoc := bson.M{}
+	if req.FirstName != "" {
+		updateDoc["first_name"] = req.FirstName
+	}
+	if req.LastName != "" {
+		updateDoc["last_name"] = req.LastName
+	}
+	if req.Email != "" {
+		updateDoc["email"] = req.Email
+	}
+	if req.Phone != "" {
+		updateDoc["phone"] = req.Phone
+	}
+	if req.Role != "" {
+		updateDoc["role"] = req.Role
+	}
+	if req.Designation != "" {
+		updateDoc["designation"] = req.Designation
+	}
+	if req.DepartmentID != nil {
+		updateDoc["department_id"] = *req.DepartmentID
+	}
+	if req.Password != "" {
+		updateDoc["password"] = encryptions.HashPassword(req.Password)
+	}
+
+	updatedAt, updatedBy := helpers.SetUpdatedTimestamp(authUserID)
+	updateDoc["updated_at"] = updatedAt
+	updateDoc["updated_by"] = updatedBy
+
+	result, err := usersCollection.UpdateOne(
+		ctx,
+		helpers.AddNotDeletedFilter(bson.M{"_id": userID}),
+		bson.M{"$set": updateDoc},
+	)
+	if err != nil || result.MatchedCount == 0 {
+		return nil, errors.New("user not found or update failed")
+	}
+
+	// Fetch updated user
+	return s.GetUserByID(userID)
 }
 
 // UpdateUserStatus updates user active/inactive status

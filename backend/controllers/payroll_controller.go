@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"api.workzen.odoo/constants"
+	"api.workzen.odoo/helpers"
 	"api.workzen.odoo/middlewares"
 	"api.workzen.odoo/services"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PayrollController struct {
@@ -80,7 +80,7 @@ func (pc *PayrollController) CreatePayrun(c *fiber.Ctx) error {
 	return constants.HTTPSuccess.Created(c, "Payrun generated successfully", payrun)
 }
 
-// ListPayruns retrieves all payruns for company
+// ListPayruns retrieves all payruns for company with role-based filtering
 func (pc *PayrollController) ListPayruns(c *fiber.Ctx) error {
 	page, _ := strconv.ParseInt(c.Query("page", "1"), 10, 64)
 	limit, _ := strconv.ParseInt(c.Query("limit", "10"), 10, 64)
@@ -88,6 +88,20 @@ func (pc *PayrollController) ListPayruns(c *fiber.Ctx) error {
 	companyID, err := middlewares.GetAuthCompanyID(c)
 	if err != nil {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	// Get current user for role-based filtering
+	user, err := middlewares.GetAuthUser(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	// For regular employees, they can only see their own payroll
+	// Admin and Payroll roles can see all payruns
+	if !user.IsSuperAdmin && user.Role != "admin" && user.Role != "payroll" {
+		// Return empty list for regular employees on this endpoint
+		// They should use /payrolls/:employee_id endpoint instead
+		return constants.HTTPSuccess.OkWithPagination(c, "Payruns retrieved successfully", []interface{}{}, page, limit, 0)
 	}
 
 	payruns, total, err := pc.service.ListPayruns(companyID, page, limit)
@@ -101,7 +115,7 @@ func (pc *PayrollController) ListPayruns(c *fiber.Ctx) error {
 // GetEmployeePayroll retrieves payroll for specific employee and month
 func (pc *PayrollController) GetEmployeePayroll(c *fiber.Ctx) error {
 	employeeIDStr := c.Params("employee_id")
-	employeeID, err := primitive.ObjectIDFromHex(employeeIDStr)
+	employeeID, err := helpers.DecryptObjectID(employeeIDStr)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid employee ID")
 	}
@@ -122,7 +136,7 @@ func (pc *PayrollController) GetEmployeePayroll(c *fiber.Ctx) error {
 // MarkAsPaid marks a payroll record as paid
 func (pc *PayrollController) MarkAsPaid(c *fiber.Ctx) error {
 	id := c.Params("id")
-	payrollID, err := primitive.ObjectIDFromHex(id)
+	payrollID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid payroll ID")
 	}

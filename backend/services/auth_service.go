@@ -100,8 +100,8 @@ type LoginResponse struct {
 	Company *CompanyResponse `json:"company,omitempty"`
 }
 
-// convertUserToResponse converts User model to UserResponse with encrypted IDs
-func convertUserToResponse(user *models.User) (*UserResponse, error) {
+// ConvertUserToResponse converts User model to UserResponse with encrypted IDs (exported for use across services)
+func ConvertUserToResponse(user *models.User) (*UserResponse, error) {
 	if user == nil {
 		return nil, errors.New("user is nil")
 	}
@@ -424,7 +424,7 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	user.Password = ""
 
 	// Convert user to response with encrypted IDs
-	userResponse, err := convertUserToResponse(&user)
+	userResponse, err := ConvertUserToResponse(&user)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare user response: %w", err)
 	}
@@ -456,7 +456,7 @@ func (s *AuthService) GetUserProfile(userID primitive.ObjectID) (*UserResponse, 
 	user.Password = ""
 
 	// Convert user to response with encrypted IDs
-	userResponse, err := convertUserToResponse(&user)
+	userResponse, err := ConvertUserToResponse(&user)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare user response: %w", err)
 	}

@@ -12,7 +12,6 @@ import (
 	"api.workzen.odoo/helpers"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type LeaveService struct{}
@@ -77,8 +76,14 @@ func (s *LeaveService) ApplyLeave(req *ApplyLeaveRequest, employeeID, companyID 
 	return &leave, nil
 }
 
-// ListLeaves retrieves leaves with filters
-func (s *LeaveService) ListLeaves(companyID primitive.ObjectID, filters map[string]interface{}, page, limit int64) ([]models.Leave, int64, error) {
+// LeaveWithUser represents a leave with populated user data
+type LeaveWithUser struct {
+	models.Leave `bson:",inline"`
+	User         *models.User `bson:"user,omitempty" json:"user,omitempty"`
+}
+
+// ListLeaves retrieves leaves with filters and populates user data
+func (s *LeaveService) ListLeaves(companyID primitive.ObjectID, filters map[string]interface{}, page, limit int64) ([]LeaveWithUser, int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -87,19 +92,44 @@ func (s *LeaveService) ListLeaves(companyID primitive.ObjectID, filters map[stri
 	// Add company filter
 	filters["company"] = companyID
 
-	skip := (page - 1) * limit
-	opts := options.Find().
-		SetSkip(skip).
-		SetLimit(limit).
-		SetSort(bson.D{{Key: "created_at", Value: -1}})
+	// Convert employee_id filter if it's a string
+	if empIDStr, ok := filters["employee_id"].(string); ok {
+		if empID, err := primitive.ObjectIDFromHex(empIDStr); err == nil {
+			filters["employee_id"] = empID
+		}
+	}
 
-	cursor, err := leavesCollection.Find(ctx, filters, opts)
+	skip := (page - 1) * limit
+
+	// Build aggregation pipeline to join with users
+	pipeline := []bson.M{
+		{"$match": filters},
+		{"$sort": bson.M{"created_at": -1}},
+		{"$skip": skip},
+		{"$limit": limit},
+		{
+			"$lookup": bson.M{
+				"from":         collections.Users,
+				"localField":   "employee_id",
+				"foreignField": "_id",
+				"as":           "user",
+			},
+		},
+		{
+			"$unwind": bson.M{
+				"path":                       "$user",
+				"preserveNullAndEmptyArrays": true,
+			},
+		},
+	}
+
+	cursor, err := leavesCollection.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
-	var leaves []models.Leave
+	var leaves []LeaveWithUser
 	if err = cursor.All(ctx, &leaves); err != nil {
 		return nil, 0, err
 	}

@@ -55,6 +55,7 @@ func RegisterRoutes(app *fiber.App) {
 	users.Post("/", middlewares.RequireHROrAdmin(), userController.CreateUser)
 	users.Get("/", middlewares.RequireHROrAdmin(), userController.ListUsers)
 	users.Get("/:id", userController.GetUserByID)
+	users.Put("/:id", middlewares.RequireHROrAdmin(), userController.UpdateUser)
 	users.Patch("/:id/status", middlewares.RequireCompanyAdmin(), userController.UpdateUserStatus)
 	users.Patch("/:id/bank", userController.UpdateBankDetails)
 	users.Delete("/:id", middlewares.RequireCompanyAdmin(), userController.DeleteUser)
@@ -73,6 +74,7 @@ func RegisterRoutes(app *fiber.App) {
 	attendance.Use(middlewares.AuthMiddleware())
 	attendance.Post("/check-in", attendanceController.CheckIn)
 	attendance.Post("/check-out", attendanceController.CheckOut)
+	attendance.Delete("/reset", attendanceController.ResetAttendance)
 	attendance.Get("/me", attendanceController.GetMyAttendance)
 	attendance.Get("/", middlewares.RequireHROrAdmin(), attendanceController.ListAttendance)
 	attendance.Get("/summary", middlewares.RequireHROrAdmin(), attendanceController.GetAttendanceSummary)
@@ -81,7 +83,7 @@ func RegisterRoutes(app *fiber.App) {
 	leaves := api.Group("/leaves")
 	leaves.Use(middlewares.AuthMiddleware())
 	leaves.Post("/", leaveController.ApplyLeave)
-	leaves.Get("/", middlewares.RequireHROrAdmin(), leaveController.ListLeaves)
+	leaves.Get("/", leaveController.ListLeaves) // All users can list (filtered by role in controller)
 	leaves.Patch("/:id/approve", middlewares.RequireHROrAdmin(), leaveController.ApproveLeave)
 	leaves.Patch("/:id/reject", middlewares.RequireHROrAdmin(), leaveController.RejectLeave)
 
@@ -102,7 +104,7 @@ func RegisterRoutes(app *fiber.App) {
 	payruns := api.Group("/payruns")
 	payruns.Use(middlewares.AuthMiddleware())
 	payruns.Post("/", middlewares.RequirePayrollOrAdmin(), payrollController.CreatePayrun)
-	payruns.Get("/", middlewares.RequirePayrollOrAdmin(), payrollController.ListPayruns)
+	payruns.Get("/", payrollController.ListPayruns) // Allow all authenticated users with role filtering
 
 	payrolls := api.Group("/payrolls")
 	payrolls.Use(middlewares.AuthMiddleware())
@@ -113,12 +115,13 @@ func RegisterRoutes(app *fiber.App) {
 	documents := api.Group("/documents")
 	documents.Use(middlewares.AuthMiddleware())
 	documents.Post("/upload", documentController.UploadDocument)
-	documents.Get("/", middlewares.RequireHROrAdmin(), documentController.ListDocuments)
+	documents.Get("/", documentController.ListDocuments) // All users can list (filtered by role in controller)
 	documents.Delete("/:id", middlewares.RequireCompanyAdmin(), documentController.DeleteDocument)
 
 	// ==================== DASHBOARD ROUTES ====================
 	dashboard := api.Group("/dashboard")
 	dashboard.Use(middlewares.AuthMiddleware())
+	dashboard.Get("/", dashboardController.GetDashboard) // General dashboard for all users
 	dashboard.Get("/admin", middlewares.RequireCompanyAdmin(), dashboardController.GetAdminDashboard)
 	dashboard.Get("/superadmin", middlewares.RequireSuperAdmin(), dashboardController.GetSuperAdminDashboard)
 }

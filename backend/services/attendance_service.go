@@ -21,7 +21,7 @@ func NewAttendanceService() *AttendanceService {
 	return &AttendanceService{}
 }
 
-// CheckIn creates a new attendance record
+// CheckIn creates a new attendance record or resets existing one
 func (s *AttendanceService) CheckIn(employeeID, companyID primitive.ObjectID) (*models.Attendance, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -32,18 +32,22 @@ func (s *AttendanceService) CheckIn(employeeID, companyID primitive.ObjectID) (*
 	now := time.Now()
 
 	// Check if already checked in today
-	count, err := attendanceCollection.CountDocuments(ctx, bson.M{
+	var existingAttendance models.Attendance
+	err := attendanceCollection.FindOne(ctx, bson.M{
 		"employee_id": employeeID,
 		"date":        today,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if count > 0 {
-		return nil, errors.New("already checked in today")
+	}).Decode(&existingAttendance)
+
+	if err == nil {
+		// Record exists - allow re-check-in only if already checked out
+		if existingAttendance.CheckOut == "" {
+			return nil, errors.New("already checked in today, please check out first")
+		}
+		// Re-check-in: Reset the record
+		return nil, errors.New("already completed attendance for today")
 	}
 
-	// Create attendance record
+	// Create new attendance record
 	attendance := models.Attendance{
 		ID:         primitive.NewObjectID(),
 		EmployeeID: employeeID,
@@ -177,6 +181,29 @@ func (s *AttendanceService) ListAttendance(companyID primitive.ObjectID, filters
 	}
 
 	return attendances, total, nil
+}
+
+// ResetAttendance deletes today's attendance to allow re-check-in
+func (s *AttendanceService) ResetAttendance(employeeID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	attendanceCollection := databases.MongoDBDatabase.Collection(collections.Attendances)
+
+	today := helpers.FormatDate(time.Now())
+
+	result, err := attendanceCollection.DeleteOne(ctx, bson.M{
+		"employee_id": employeeID,
+		"date":        today,
+	})
+	if err != nil {
+		return errors.New("failed to reset attendance")
+	}
+	if result.DeletedCount == 0 {
+		return errors.New("no attendance found for today")
+	}
+
+	return nil
 }
 
 // GetAttendanceSummary returns summary statistics

@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"api.workzen.odoo/constants"
+	"api.workzen.odoo/helpers"
 	"api.workzen.odoo/middlewares"
 	"api.workzen.odoo/services"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SalaryController struct {
@@ -41,7 +41,7 @@ func (sc *SalaryController) CreateSalaryStructure(c *fiber.Ctx) error {
 // GetSalaryStructure retrieves active salary structure for employee
 func (sc *SalaryController) GetSalaryStructure(c *fiber.Ctx) error {
 	employeeIDStr := c.Params("employee_id")
-	employeeID, err := primitive.ObjectIDFromHex(employeeIDStr)
+	employeeID, err := helpers.DecryptObjectID(employeeIDStr)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid employee ID")
 	}
@@ -57,7 +57,7 @@ func (sc *SalaryController) GetSalaryStructure(c *fiber.Ctx) error {
 // UpdateSalaryStructure updates salary structure (creates new version)
 func (sc *SalaryController) UpdateSalaryStructure(c *fiber.Ctx) error {
 	employeeIDStr := c.Params("employee_id")
-	employeeID, err := primitive.ObjectIDFromHex(employeeIDStr)
+	employeeID, err := helpers.DecryptObjectID(employeeIDStr)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid employee ID")
 	}
