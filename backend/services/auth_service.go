@@ -47,6 +47,102 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required,min=8"`
 }
 
+// UserResponse represents user data with encrypted IDs for API responses
+type UserResponse struct {
+	ID               string             `json:"id,omitempty"`
+	Username         string             `json:"username"`
+	Email            string             `json:"email"`
+	FirstName        string             `json:"first_name"`
+	LastName         string             `json:"last_name"`
+	Role             models.Role        `json:"role"`
+	IsSuperAdmin     bool               `json:"is_super_admin,omitempty"`
+	Designation      string             `json:"designation,omitempty"`
+	DepartmentID     string             `json:"department_id,omitempty"`
+	ManagerID        string             `json:"manager_id,omitempty"`
+	EmployeeCode     string             `json:"employee_code,omitempty"`
+	DateOfJoin       string             `json:"date_of_join,omitempty"`
+	Status           models.UserStatus  `json:"status"`
+	Phone            string             `json:"phone,omitempty"`
+	Address          models.Address     `json:"address,omitempty"`
+	ProfilePic       string             `json:"profile_pic,omitempty"`
+	ResumeURL        string             `json:"resume_url,omitempty"`
+	Company          string             `json:"company,omitempty"`
+	BankDetails      *models.BankDetails `json:"bank_details,omitempty"`
+	LastLogin        primitive.DateTime `json:"last_login,omitempty"`
+	EmailVerified    bool               `json:"email_verified"`
+	TwoFactorEnabled bool               `json:"two_factor_enabled"`
+	CreatedAt        primitive.DateTime `json:"created_at,omitempty"`
+	UpdatedAt        primitive.DateTime `json:"updated_at,omitempty"`
+}
+
+// convertUserToResponse converts User model to UserResponse with encrypted IDs
+func convertUserToResponse(user *models.User) (*UserResponse, error) {
+	if user == nil {
+		return nil, errors.New("user is nil")
+	}
+
+	response := &UserResponse{
+		Username:         user.Username,
+		Email:            user.Email,
+		FirstName:        user.FirstName,
+		LastName:         user.LastName,
+		Role:             user.Role,
+		IsSuperAdmin:     user.IsSuperAdmin,
+		Designation:      user.Designation,
+		EmployeeCode:     user.EmployeeCode,
+		DateOfJoin:       user.DateOfJoin,
+		Status:           user.Status,
+		Phone:            user.Phone,
+		Address:          user.Address,
+		ProfilePic:       user.ProfilePic,
+		ResumeURL:        user.ResumeURL,
+		BankDetails:      user.BankDetails,
+		LastLogin:        user.LastLogin,
+		EmailVerified:    user.EmailVerified,
+		TwoFactorEnabled: user.TwoFactorEnabled,
+		CreatedAt:        user.CreatedAt,
+		UpdatedAt:        user.UpdatedAt,
+	}
+
+	// Encrypt user ID
+	if !user.ID.IsZero() {
+		encryptedID, err := encryptions.EncryptID(user.ID.Hex())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt user ID: %w", err)
+		}
+		response.ID = encryptedID
+	}
+
+	// Encrypt company ID
+	if !user.Company.IsZero() {
+		encryptedCompanyID, err := encryptions.EncryptID(user.Company.Hex())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt company ID: %w", err)
+		}
+		response.Company = encryptedCompanyID
+	}
+
+	// Encrypt department ID
+	if !user.DepartmentID.IsZero() {
+		encryptedDeptID, err := encryptions.EncryptID(user.DepartmentID.Hex())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt department ID: %w", err)
+		}
+		response.DepartmentID = encryptedDeptID
+	}
+
+	// Encrypt manager ID
+	if !user.ManagerID.IsZero() {
+		encryptedManagerID, err := encryptions.EncryptID(user.ManagerID.Hex())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt manager ID: %w", err)
+		}
+		response.ManagerID = encryptedManagerID
+	}
+
+	return response, nil
+}
+
 // Signup handles company registration and admin user creation
 func (s *AuthService) Signup(req *SignupRequest) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -122,7 +218,7 @@ func (s *AuthService) Signup(req *SignupRequest) error {
 }
 
 // Login authenticates user and generates JWT token
-func (s *AuthService) Login(req *LoginRequest) (string, *models.User, error) {
+func (s *AuthService) Login(req *LoginRequest) (string, *UserResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -193,11 +289,17 @@ func (s *AuthService) Login(req *LoginRequest) (string, *models.User, error) {
 	// Remove password from response
 	user.Password = ""
 
-	return token, &user, nil
+	// Convert user to response with encrypted IDs
+	userResponse, err := convertUserToResponse(&user)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to prepare user response: %w", err)
+	}
+
+	return token, userResponse, nil
 }
 
 // GetUserProfile retrieves user profile by ID
-func (s *AuthService) GetUserProfile(userID primitive.ObjectID) (*models.User, error) {
+func (s *AuthService) GetUserProfile(userID primitive.ObjectID) (*UserResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -212,7 +314,13 @@ func (s *AuthService) GetUserProfile(userID primitive.ObjectID) (*models.User, e
 	// Remove password
 	user.Password = ""
 
-	return &user, nil
+	// Convert user to response with encrypted IDs
+	userResponse, err := convertUserToResponse(&user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare user response: %w", err)
+	}
+
+	return userResponse, nil
 }
 
 // ChangePassword updates user password
