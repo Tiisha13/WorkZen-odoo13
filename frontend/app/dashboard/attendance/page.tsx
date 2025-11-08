@@ -71,11 +71,20 @@ export default function AttendancePage() {
       }>(API_ENDPOINTS.ATTENDANCES);
       // Get today's attendance from the list
       if (response.data && response.data.length > 0) {
-        const today = new Date().toISOString().split("T")[0];
-        const todayRecord = response.data.find((att) =>
-          att.date.startsWith(today)
-        );
-        if (todayRecord) setTodayAttendance(todayRecord);
+        const today = new Date();
+        const todayStr = today.toISOString().split("T")[0];
+
+        const todayRecord = response.data.find((att) => {
+          if (!att.date) return false;
+          // Try to match date in various formats
+          const dateStr = String(att.date);
+          return dateStr.startsWith(todayStr) || dateStr.includes(todayStr);
+        });
+
+        if (todayRecord) {
+          console.log("Today's attendance:", todayRecord);
+          setTodayAttendance(todayRecord);
+        }
       }
     } catch (error) {
       console.error("No attendance today", error);
@@ -147,59 +156,138 @@ export default function AttendancePage() {
     }
   };
 
-  const formatTime = (dateString: string | undefined) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid Date";
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const formatTime = (timeString: string | undefined) => {
+    if (!timeString) return "-";
+    try {
+      // If it's just a time string like "02:36:03" or "14:30:00"
+      if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
+        const [hours, minutes] = timeString.split(":").map(Number);
+        const period = hours >= 12 ? "PM" : "AM";
+        const displayHours = hours % 12 || 12;
+        return `${displayHours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")} ${period}`;
+      }
+
+      // If it includes date (ISO format or UTC format)
+      if (timeString.includes("T") || timeString.includes("Z")) {
+        const date = new Date(timeString);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+        }
+      }
+
+      return timeString; // Return as is if we can't format it
+    } catch (error) {
+      console.error("Error formatting time:", error, timeString);
+      return "-";
+    }
   };
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "-";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid Date";
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    try {
+      // Handle both ISO string and other formats
+      let date: Date;
+      if (dateString.includes("T") || dateString.includes("Z")) {
+        // ISO format or UTC format
+        date = new Date(dateString);
+      } else if (dateString.includes("-")) {
+        // YYYY-MM-DD format
+        const [year, month, day] = dateString.split("-").map(Number);
+        date = new Date(year, month - 1, day);
+      } else {
+        // Try parsing as is
+        date = new Date(dateString);
+      }
+
+      if (isNaN(date.getTime())) return "-";
+
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "-";
+    }
   };
 
   const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      present: "bg-green-100 text-green-800",
-      absent: "bg-red-100 text-red-800",
-      leave: "bg-yellow-100 text-yellow-800",
-      half_day: "bg-orange-100 text-orange-800",
+    const statusConfig: Record<
+      string,
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+        className?: string;
+      }
+    > = {
+      present: {
+        variant: "outline",
+        label: "Present",
+        className: "border-green-200 bg-green-50 text-green-700",
+      },
+      absent: {
+        variant: "outline",
+        label: "Absent",
+        className: "border-red-200 bg-red-50 text-red-700",
+      },
+      leave: {
+        variant: "outline",
+        label: "Leave",
+        className: "border-yellow-200 bg-yellow-50 text-yellow-700",
+      },
+      half_day: {
+        variant: "outline",
+        label: "Half Day",
+        className: "border-orange-200 bg-orange-50 text-orange-700",
+      },
     };
+
+    const config = statusConfig[status] || {
+      variant: "secondary" as const,
+      label: status,
+      className: "",
+    };
+
     return (
-      <Badge className={colors[status] || "bg-gray-100 text-gray-800"}>
-        {status.replace("_", " ").toUpperCase()}
+      <Badge variant={config.variant} className={config.className}>
+        {config.label}
       </Badge>
     );
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Attendance</h1>
-        <p className="text-muted-foreground">Track your daily attendance</p>
+    <div className="flex flex-col gap-6 p-6">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Attendance
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track your daily attendance and working hours
+          </p>
+        </div>
       </div>
 
+      {/* Today's Attendance Card */}
       <Card>
         <CardHeader>
           <CardTitle>Today&apos;s Attendance</CardTitle>
           <CardDescription>Check in and check out for today</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-2">
               {todayAttendance ? (
                 <>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-4 md:gap-6">
                     <div>
                       <p className="text-sm text-muted-foreground">Check-in</p>
                       <p className="text-lg font-semibold">
@@ -208,7 +296,9 @@ export default function AttendancePage() {
                     </div>
                     {todayAttendance.check_out && (
                       <>
-                        <div className="text-muted-foreground">→</div>
+                        <div className="hidden md:block text-muted-foreground">
+                          →
+                        </div>
                         <div>
                           <p className="text-sm text-muted-foreground">
                             Check-out
@@ -219,7 +309,9 @@ export default function AttendancePage() {
                         </div>
                         {todayAttendance.working_hours && (
                           <>
-                            <div className="text-muted-foreground">•</div>
+                            <div className="hidden md:block text-muted-foreground">
+                              •
+                            </div>
                             <div>
                               <p className="text-sm text-muted-foreground">
                                 Working Hours
@@ -242,7 +334,7 @@ export default function AttendancePage() {
             </div>
             <div className="flex gap-2">
               {!todayAttendance ? (
-                <Button onClick={handleCheckIn} disabled={checkingIn}>
+                <Button onClick={handleCheckIn} disabled={checkingIn} size="sm">
                   <IconClock className="w-4 h-4 mr-2" />
                   {checkingIn ? "Checking In..." : "Check In"}
                 </Button>
@@ -251,6 +343,7 @@ export default function AttendancePage() {
                   onClick={handleCheckOut}
                   disabled={checkingIn}
                   variant="destructive"
+                  size="sm"
                 >
                   <IconClockStop className="w-4 h-4 mr-2" />
                   {checkingIn ? "Checking Out..." : "Check Out"}
@@ -266,7 +359,8 @@ export default function AttendancePage() {
         </CardContent>
       </Card>
 
-      <div className="border rounded-lg">
+      {/* Attendance Records Table */}
+      <div className="bg-card rounded-lg border shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -280,35 +374,43 @@ export default function AttendancePage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  Loading...
+                <TableCell colSpan={5} className="h-32 text-center">
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : attendances.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No attendance records found
+                <TableCell colSpan={5} className="h-32 text-center">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <p className="text-sm">No attendance records found</p>
+                    <p className="text-xs mt-1">Start by checking in today</p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               attendances.map((attendance) => (
-                <TableRow key={attendance.id}>
+                <TableRow key={attendance.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium">
                     {formatDate(attendance.date)}
                   </TableCell>
-                  <TableCell>{formatTime(attendance.check_in)}</TableCell>
-                  <TableCell>
-                    {attendance.check_out
-                      ? formatTime(attendance.check_out)
-                      : "-"}
+                  <TableCell className="text-sm">
+                    {formatTime(attendance.check_in)}
                   </TableCell>
-                  <TableCell>
-                    {attendance.working_hours
-                      ? `${attendance.working_hours.toFixed(2)}h`
-                      : "-"}
+                  <TableCell className="text-sm">
+                    {attendance.check_out ? (
+                      formatTime(attendance.check_out)
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {attendance.working_hours ? (
+                      `${attendance.working_hours.toFixed(2)}h`
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                   <TableCell>{getStatusBadge(attendance.status)}</TableCell>
                 </TableRow>
