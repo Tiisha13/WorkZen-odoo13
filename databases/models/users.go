@@ -31,18 +31,31 @@ type User struct {
 	IsSuperAdmin     bool               `bson:"is_super_admin,omitempty" json:"is_super_admin,omitempty"`
 	Designation      string             `bson:"designation,omitempty" json:"designation,omitempty"`
 	DepartmentID     primitive.ObjectID `bson:"department_id,omitempty" json:"department_id,omitempty"`
+	ManagerID        primitive.ObjectID `bson:"manager_id,omitempty" json:"manager_id,omitempty"`
 	EmployeeCode     string             `bson:"employee_code,omitempty" json:"employee_code,omitempty"`
 	DateOfJoin       string             `bson:"date_of_join,omitempty" json:"date_of_join,omitempty"` // YYYY-MM-DD
 	Status           UserStatus         `bson:"status" json:"status"`                                 // active | inactive
 	Phone            string             `bson:"phone,omitempty" json:"phone,omitempty"`
 	Address          Address            `bson:"address,omitempty" json:"address,omitempty"`
 	ProfilePic       string             `bson:"profile_pic,omitempty" json:"profile_pic,omitempty"`
+	ResumeURL        string             `bson:"resume_url,omitempty" json:"resume_url,omitempty"`
 	Company          primitive.ObjectID `bson:"company,omitempty" json:"company,omitempty"`
+	BankDetails      *BankDetails       `bson:"bank_details,omitempty" json:"bank_details,omitempty"`
 	LastLogin        primitive.DateTime `bson:"last_login,omitempty" json:"last_login,omitempty"`
 	EmailVerified    bool               `bson:"email_verified" json:"email_verified"`
 	TwoFactorEnabled bool               `bson:"two_factor_enabled" json:"two_factor_enabled"`
 
 	TimeStamp
+}
+
+// BankDetails stores employee banking information for payroll
+type BankDetails struct {
+	AccountNumber string `bson:"account_number,omitempty" json:"account_number,omitempty"`
+	BankName      string `bson:"bank_name,omitempty" json:"bank_name,omitempty"`
+	IFSCCode      string `bson:"ifsc_code,omitempty" json:"ifsc_code,omitempty"`
+	BranchName    string `bson:"branch_name,omitempty" json:"branch_name,omitempty"`
+	PANNo         string `bson:"pan_no,omitempty" json:"pan_no,omitempty"`
+	UANNo         string `bson:"uan_no,omitempty" json:"uan_no,omitempty"` // Universal Account Number for PF
 }
 
 // Address structure embedded in User

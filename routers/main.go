@@ -39,7 +39,11 @@ func Init() *fiber.App {
 		TimeZone:   "Asia/Kolkata",
 	}))
 
-	// api := app.Group("/api/v1")
+	// Serve static files for uploads
+	app.Static("/files", "./assets/uploads")
+
+	// Register all routes
+	RegisterRoutes(app)
 
 	// 404 Route
 	app.Use(func(c *fiber.Ctx) error {
