@@ -20,7 +20,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Drawer,
@@ -30,7 +29,6 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
 } from "@/components/ui/drawer";
 import {
   AlertDialog,
@@ -60,27 +58,28 @@ export default function UsersPage() {
   usePageTitle("User Management | WorkZen");
   useRequireAuth(["superadmin", "admin", "hr"]);
 
+  const [mounted, setMounted] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    first_name: "",
-    last_name: "",
-    password: "",
-    role: "employee",
-    designation: "",
-    phone: "",
-  });
+  // Individual form states
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("employee");
+  const [designation, setDesignation] = useState("");
+  const [phone, setPhone] = useState("");
 
   const currentUser = apiService.getUser();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
+    setMounted(true);
     fetchUsers();
   }, []);
 
@@ -108,25 +107,36 @@ export default function UsersPage() {
     e.preventDefault();
 
     // Validation
-    if (!formData.username.trim() || !formData.email.trim()) {
-      toast.error("Username and email are required");
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      toast.error("First name, last name, and email are required");
       return;
     }
 
-    if (!editingUser && !formData.password) {
+    if (!editingUser && !password) {
       toast.error("Password is required for new users");
       return;
     }
 
+    const userData = {
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      password,
+      role,
+      designation,
+      phone,
+    };
+
     try {
+      setSubmitting(true);
       if (editingUser) {
         await apiService.put(
           `${API_ENDPOINTS.USERS}/${editingUser.id}`,
-          formData
+          userData
         );
         toast.success("User updated successfully");
       } else {
-        await apiService.post(API_ENDPOINTS.USERS, formData);
+        await apiService.post(API_ENDPOINTS.USERS, userData);
         toast.success("User created successfully");
       }
       setIsDialogOpen(false);
@@ -138,6 +148,8 @@ export default function UsersPage() {
       if (!message.includes("Session expired")) {
         toast.error(message);
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -160,31 +172,25 @@ export default function UsersPage() {
   };
 
   const resetForm = () => {
-    setFormData({
-      username: "",
-      email: "",
-      first_name: "",
-      last_name: "",
-      password: "",
-      role: "employee",
-      designation: "",
-      phone: "",
-    });
+    setEmail("");
+    setFirstName("");
+    setLastName("");
+    setPassword("");
+    setRole("employee");
+    setDesignation("");
+    setPhone("");
     setEditingUser(null);
   };
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
-    setFormData({
-      username: user.username,
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      password: "",
-      role: user.role,
-      designation: user.designation || "",
-      phone: user.phone || "",
-    });
+    setEmail(user.email);
+    setFirstName(user.first_name);
+    setLastName(user.last_name);
+    setPassword("");
+    setRole(user.role);
+    setDesignation(user.designation || "");
+    setPhone(user.phone || "");
     setIsDialogOpen(true);
   };
 
@@ -198,104 +204,101 @@ export default function UsersPage() {
   );
 
   const getRoleBadge = (role: string) => {
-    const colors: Record<string, string> = {
-      superadmin: "bg-purple-100 text-purple-800",
-      admin: "bg-blue-100 text-blue-800",
-      hr: "bg-green-100 text-green-800",
-      payroll: "bg-yellow-100 text-yellow-800",
-      employee: "bg-gray-100 text-gray-800",
+    const config: Record<string, { className: string; label: string }> = {
+      superadmin: {
+        className:
+          "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+        label: "Super Admin",
+      },
+      admin: {
+        className:
+          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+        label: "Admin",
+      },
+      hr: {
+        className:
+          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+        label: "HR",
+      },
+      payroll: {
+        className:
+          "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+        label: "Payroll",
+      },
+      employee: {
+        className:
+          "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400",
+        label: "Employee",
+      },
     };
-    return (
-      <Badge className={colors[role] || colors.employee}>
-        {role.charAt(0).toUpperCase() + role.slice(1)}
-      </Badge>
-    );
+    const { className, label } = config[role] || config.employee;
+    return <Badge className={className}>{label}</Badge>;
   };
 
   const getStatusBadge = (status: string) => {
+    const isActive = status === "active";
     return (
-      <Badge variant={status === "active" ? "default" : "secondary"}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <Badge
+        className={
+          isActive
+            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+            : "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400"
+        }
+      >
+        {isActive ? "Active" : "Inactive"}
       </Badge>
     );
   };
 
-  // Form fields component
+  // Simplified and optimized form
   const UserFormFields = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="space-y-2">
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-1.5">
         <Label htmlFor="first_name">First Name *</Label>
         <Input
           id="first_name"
-          value={formData.first_name}
-          onChange={(e) =>
-            setFormData({ ...formData, first_name: e.target.value })
-          }
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
           required
-          placeholder="Enter first name"
+          placeholder="John"
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="last_name">Last Name *</Label>
         <Input
           id="last_name"
-          value={formData.last_name}
-          onChange={(e) =>
-            setFormData({ ...formData, last_name: e.target.value })
-          }
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
           required
-          placeholder="Enter last name"
+          placeholder="Doe"
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="username">Username *</Label>
-        <Input
-          id="username"
-          value={formData.username}
-          onChange={(e) =>
-            setFormData({ ...formData, username: e.target.value })
-          }
-          required
-          disabled={!!editingUser}
-          placeholder="johndoe"
-        />
-      </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5 md:col-span-2">
         <Label htmlFor="email">Email *</Label>
         <Input
           id="email"
           type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
-          placeholder="test@gmail.com"
+          placeholder="john@example.com"
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="password">Password {!editingUser && "*"}</Label>
         <Input
           id="password"
           type="password"
-          value={formData.password}
-          onChange={(e) =>
-            setFormData({ ...formData, password: e.target.value })
-          }
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-            }
-          }}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required={!editingUser}
           placeholder="••••••••"
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="role">Role *</Label>
-        <Select
-          value={formData.role}
-          onValueChange={(value) => setFormData({ ...formData, role: value })}
-        >
-          <SelectTrigger className="w-full">
+        <Select value={role} onValueChange={setRole}>
+          <SelectTrigger>
             <SelectValue placeholder="Select role" />
           </SelectTrigger>
           <SelectContent>
@@ -320,137 +323,78 @@ export default function UsersPage() {
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="designation">Designation</Label>
         <Input
           id="designation"
-          value={formData.designation}
-          onChange={(e) =>
-            setFormData({ ...formData, designation: e.target.value })
-          }
+          value={designation}
+          onChange={(e) => setDesignation(e.target.value)}
           placeholder="Software Engineer"
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="phone">Phone</Label>
         <Input
           id="phone"
           type="tel"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
           placeholder="+1234567890"
         />
       </div>
     </div>
   );
 
+  if (!mounted) {
+    return null;
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="flex flex-col gap-6 p-6">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">
-            Manage system users and their roles
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Users
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage team members and their permissions
           </p>
         </div>
-        {isMobile ? (
-          <Drawer open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DrawerTrigger asChild>
-              <Button onClick={resetForm}>
-                <IconPlus className="w-4 h-4 mr-2" />
-                Add User
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent>
-              <DrawerHeader>
-                <DrawerTitle>
-                  {editingUser ? "Edit User" : "Add New User"}
-                </DrawerTitle>
-                <DrawerDescription>
-                  {editingUser
-                    ? "Update user information"
-                    : "Create a new user account"}
-                </DrawerDescription>
-              </DrawerHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 px-4">
-                <UserFormFields />
-                <DrawerFooter>
-                  <Button type="submit">
-                    {editingUser ? "Update User" : "Create User"}
-                  </Button>
-                  <DrawerClose asChild>
-                    <Button type="button" variant="outline">
-                      Cancel
-                    </Button>
-                  </DrawerClose>
-                </DrawerFooter>
-              </form>
-            </DrawerContent>
-          </Drawer>
-        ) : (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <IconPlus className="w-4 h-4 mr-2" />
-                Add User
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingUser ? "Edit User" : "Add New User"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingUser
-                    ? "Update user information"
-                    : "Create a new user account"}
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <UserFormFields />
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingUser ? "Update User" : "Create User"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
+        <Button
+          onClick={() => {
+            resetForm();
+            setIsDialogOpen(true);
+          }}
+          size="sm"
+        >
+          <IconPlus className="w-4 h-4 mr-2" />
+          Add User
+        </Button>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1 max-w-sm">
-          <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <Input
+          placeholder="Search by name, email, or username..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9 h-9"
+        />
       </div>
 
-      {/* Alert Dialog for Delete Confirmation */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteUser} onOpenChange={() => setDeleteUser(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              user
-              <strong className="block mt-2">
-                {deleteUser?.first_name} {deleteUser?.last_name} (
-                {deleteUser?.username})
+              Are you sure you want to delete{" "}
+              <strong>
+                {deleteUser?.first_name} {deleteUser?.last_name}
               </strong>
-              and remove their data from the system.
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -465,12 +409,12 @@ export default function UsersPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="border rounded-lg">
+      {/* Users Table Card */}
+      <div className="bg-card rounded-lg border shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Username</TableHead>
+              <TableHead>User</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Designation</TableHead>
@@ -481,46 +425,63 @@ export default function UsersPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
-                  Loading...
+                <TableCell colSpan={6} className="h-32 text-center">
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No users found
+                <TableCell colSpan={6} className="h-32 text-center">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <p className="text-sm">No users found</p>
+                    {searchTerm && (
+                      <p className="text-xs mt-1">Try adjusting your search</p>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">
-                    {user.first_name} {user.last_name}
+                <TableRow key={user.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {user.first_name} {user.last_name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        @{user.username}
+                      </span>
+                    </div>
                   </TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell className="text-sm">{user.email}</TableCell>
                   <TableCell>{getRoleBadge(user.role)}</TableCell>
-                  <TableCell>{user.designation || "-"}</TableCell>
+                  <TableCell className="text-sm">
+                    {user.designation || (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEdit(user)}
-                    >
-                      <IconEdit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setDeleteUser(user)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <IconTrash className="w-4 h-4" />
-                    </Button>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleEdit(user)}
+                        className="h-8 w-8"
+                      >
+                        <IconEdit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setDeleteUser(user)}
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                      >
+                        <IconTrash className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -528,6 +489,72 @@ export default function UsersPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile Drawer */}
+      {isMobile && (
+        <Drawer open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DrawerContent className="max-h-[95vh]">
+            <DrawerHeader>
+              <DrawerTitle>
+                {editingUser ? "Edit User" : "Add New User"}
+              </DrawerTitle>
+              <DrawerDescription>Fill in the required fields</DrawerDescription>
+            </DrawerHeader>
+            <form onSubmit={handleSubmit} className="px-4 pb-4 overflow-y-auto">
+              <div className="space-y-4 pb-4">
+                <UserFormFields />
+              </div>
+              <DrawerFooter className="px-0 pt-4">
+                <Button type="submit" className="w-full" disabled={submitting}>
+                  {submitting ? "Saving..." : editingUser ? "Update" : "Create"}
+                </Button>
+                <DrawerClose asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </form>
+          </DrawerContent>
+        </Drawer>
+      )}
+
+      {/* Desktop Dialog */}
+      {!isMobile && (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingUser ? "Edit User" : "Add New User"}
+              </DialogTitle>
+              <DialogDescription>
+                Fill in the required fields below
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <UserFormFields />
+              <DialogFooter className="gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? "Saving..." : editingUser ? "Update" : "Create"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
