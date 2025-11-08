@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"api.workzen.odoo/constants"
+	"api.workzen.odoo/encryptions"
 	"api.workzen.odoo/services"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -49,8 +50,15 @@ func (cc *CompanyController) ListCompanies(c *fiber.Ctx) error {
 
 // GetCompanyByID retrieves a company by ID
 func (cc *CompanyController) GetCompanyByID(c *fiber.Ctx) error {
-	id := c.Params("id")
-	companyID, err := primitive.ObjectIDFromHex(id)
+	encryptedID := c.Params("id")
+
+	// Decrypt the company ID
+	decryptedID, err := encryptions.DecryptID(encryptedID)
+	if err != nil {
+		return constants.HTTPErrors.BadRequest(c, "Invalid company ID")
+	}
+
+	companyID, err := primitive.ObjectIDFromHex(decryptedID)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid company ID")
 	}
@@ -65,8 +73,15 @@ func (cc *CompanyController) GetCompanyByID(c *fiber.Ctx) error {
 
 // ApproveCompany approves a company (SuperAdmin only)
 func (cc *CompanyController) ApproveCompany(c *fiber.Ctx) error {
-	id := c.Params("id")
-	companyID, err := primitive.ObjectIDFromHex(id)
+	encryptedID := c.Params("id")
+
+	// Decrypt the company ID
+	decryptedID, err := encryptions.DecryptID(encryptedID)
+	if err != nil {
+		return constants.HTTPErrors.BadRequest(c, "Invalid company ID")
+	}
+
+	companyID, err := primitive.ObjectIDFromHex(decryptedID)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid company ID")
 	}
@@ -81,8 +96,15 @@ func (cc *CompanyController) ApproveCompany(c *fiber.Ctx) error {
 
 // DeactivateCompany deactivates a company (SuperAdmin only)
 func (cc *CompanyController) DeactivateCompany(c *fiber.Ctx) error {
-	id := c.Params("id")
-	companyID, err := primitive.ObjectIDFromHex(id)
+	encryptedID := c.Params("id")
+
+	// Decrypt the company ID
+	decryptedID, err := encryptions.DecryptID(encryptedID)
+	if err != nil {
+		return constants.HTTPErrors.BadRequest(c, "Invalid company ID")
+	}
+
+	companyID, err := primitive.ObjectIDFromHex(decryptedID)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid company ID")
 	}
