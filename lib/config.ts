@@ -37,6 +37,9 @@ export const API_ENDPOINTS = {
   DOCUMENTS: `${API_BASE_URL}${API_VERSION}/documents`,
   DOCUMENTS_UPLOAD: `${API_BASE_URL}${API_VERSION}/documents/upload`,
 
+  // Companies
+  COMPANIES: `${API_BASE_URL}${API_VERSION}/companies`,
+
   // Dashboard
   DASHBOARD: `${API_BASE_URL}${API_VERSION}/dashboard/admin`,
   DASHBOARD_SUPERADMIN: `${API_BASE_URL}${API_VERSION}/dashboard/superadmin`,
