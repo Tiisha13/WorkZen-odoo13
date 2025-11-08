@@ -3,6 +3,7 @@ version: 1.0.0
 server:
   port: ":5000"
   mode: "development" # "development" or "production"
+  frontend_url: "http://localhost:3000"
 
 encryption:
   jwt:
@@ -30,3 +31,11 @@ databases:
   mongodb:
     uri: "mongodb://localhost:27017"
     db: "WorkZen"
+
+smtp:
+  host: "smtp.example.com"
+  port: 587
+  username: "your_smtp_username"
+  password: "your_smtp_password"
+  from_email: ""
+  FROM_NAME: "WorkZen Support"
