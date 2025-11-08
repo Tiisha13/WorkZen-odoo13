@@ -213,6 +213,15 @@ class ApiService {
     return this.handleResponse<T>(response);
   }
 
+  async patch<T>(url: string, data: unknown): Promise<T> {
+    const response = await fetch(url, {
+      method: "PATCH",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<T>(response);
+  }
+
   async delete<T>(url: string): Promise<T> {
     const response = await fetch(url, {
       method: "DELETE",

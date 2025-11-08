@@ -40,43 +40,43 @@ const menuItems = [
     href: "/dashboard/users",
     icon: IconUsers,
     label: "Users",
-    roles: ["superadmin", "admin", "hr"],
+    roles: ["admin", "hr"],
   },
   {
     href: "/dashboard/departments",
     icon: IconBuilding,
     label: "Departments",
-    roles: ["superadmin", "admin", "hr"],
+    roles: ["admin", "hr"],
   },
   {
     href: "/dashboard/attendance",
     icon: IconClock,
     label: "Attendance",
-    roles: ["superadmin", "admin", "hr", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     href: "/dashboard/leaves",
     icon: IconCalendar,
     label: "Leaves",
-    roles: ["superadmin", "admin", "hr", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     href: "/dashboard/payroll",
     icon: IconCash,
     label: "Payroll",
-    roles: ["superadmin", "admin", "payroll"],
+    roles: ["admin", "payroll"],
   },
   {
     href: "/dashboard/documents",
     icon: IconFileText,
     label: "Documents",
-    roles: ["superadmin", "admin", "hr", "employee"],
+    roles: ["admin", "hr", "employee"],
   },
   {
     href: "/dashboard/reports",
     icon: IconChartBar,
     label: "Reports",
-    roles: ["superadmin", "admin", "hr", "payroll"],
+    roles: ["admin", "hr", "payroll"],
   },
 ];
 
@@ -85,9 +85,13 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   const canViewItem = (roles: string[]) => {
-    if (isSuperAdmin()) return true;
     return hasRole(roles);
   };
+
+  // SuperAdmin only sees Dashboard (Companies List)
+  const visibleMenuItems = isSuperAdmin()
+    ? menuItems.filter((item) => item.href === "/dashboard")
+    : menuItems.filter((item) => canViewItem(item.roles));
 
   return (
     <Sidebar>
@@ -108,27 +112,22 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems
-                .filter((item) => canViewItem(item.roles))
-                .map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === item.href}
+              {visibleMenuItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild isActive={pathname === item.href}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-2",
+                        pathname === item.href && "bg-accent"
+                      )}
                     >
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          "flex items-center gap-2",
-                          pathname === item.href && "bg-accent"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
