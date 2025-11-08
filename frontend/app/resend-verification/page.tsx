@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { IconMail, IconLoader2, IconCheck } from "@tabler/icons-react";
 import { apiService } from "@/lib/api-service";
 import { toast } from "sonner";
+import Link from "next/link";
 
 export default function ResendVerificationPage() {
   const router = useRouter();
@@ -160,12 +161,12 @@ export default function ResendVerificationPage() {
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
             Need help?{" "}
-            <a
+            <Link
               href="mailto:support@workzen.com"
               className="text-green-600 hover:underline"
             >
               Contact Support
-            </a>
+            </Link>
           </p>
         </div>
       </div>
