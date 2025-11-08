@@ -7,6 +7,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -32,7 +33,7 @@ func Init() *fiber.App {
 		Level: compress.LevelBestSpeed,
 	}))
 	app.Use(helmet.New())
-
+	app.Use(cors.New())
 	app.Use(logger.New(logger.Config{
 		Format:     "[${ip}]:${port} ${time} ${status} - ${method} ${latency} ${path}\n",
 		TimeFormat: "02-Jan-2006 15:04:05",
