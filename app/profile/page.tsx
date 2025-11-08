@@ -11,11 +11,13 @@ export default function ProfilePage() {
   usePageTitle("Profile Settings | WorkZen");
   const { user, isLoading } = useRequireAuth();
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Skeleton className="h-96 w-full max-w-2xl" />
-      </div>
+      <DashboardLayout>
+        <div className="flex h-screen items-center justify-center">
+          <Skeleton className="h-96 w-full max-w-2xl" />
+        </div>
+      </DashboardLayout>
     );
   }
 
@@ -35,7 +37,7 @@ export default function ProfilePage() {
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="space-y-4">
-            <ProfileForm user={user!} />
+            <ProfileForm user={user} />
           </TabsContent>
           <TabsContent value="security" className="space-y-4">
             <ChangePasswordForm />
