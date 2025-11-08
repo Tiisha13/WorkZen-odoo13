@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"api.workzen.odoo/constants"
+	"api.workzen.odoo/helpers"
 	"api.workzen.odoo/middlewares"
 	"api.workzen.odoo/services"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DepartmentController struct {
@@ -70,7 +70,7 @@ func (dc *DepartmentController) ListDepartments(c *fiber.Ctx) error {
 // GetDepartmentByID retrieves a department by ID
 func (dc *DepartmentController) GetDepartmentByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	departmentID, err := primitive.ObjectIDFromHex(id)
+	departmentID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid department ID")
 	}
@@ -91,7 +91,7 @@ func (dc *DepartmentController) GetDepartmentByID(c *fiber.Ctx) error {
 // UpdateDepartment updates a department
 func (dc *DepartmentController) UpdateDepartment(c *fiber.Ctx) error {
 	id := c.Params("id")
-	departmentID, err := primitive.ObjectIDFromHex(id)
+	departmentID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid department ID")
 	}
@@ -122,7 +122,7 @@ func (dc *DepartmentController) UpdateDepartment(c *fiber.Ctx) error {
 // DeleteDepartment soft deletes a department
 func (dc *DepartmentController) DeleteDepartment(c *fiber.Ctx) error {
 	id := c.Params("id")
-	departmentID, err := primitive.ObjectIDFromHex(id)
+	departmentID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid department ID")
 	}

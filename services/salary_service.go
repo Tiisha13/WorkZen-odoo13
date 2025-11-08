@@ -35,8 +35,8 @@ func (s *SalaryService) CreateSalaryStructure(req *CreateSalaryStructureRequest,
 	salaryCollection := databases.MongoDBDatabase.Collection(collections.SalaryStructures)
 	configCollection := databases.MongoDBDatabase.Collection(collections.PayrollConfigurations)
 
-	// Parse employee ID
-	employeeID, err := primitive.ObjectIDFromHex(req.EmployeeID)
+	// Parse and decrypt employee ID
+	employeeID, err := helpers.DecryptObjectID(req.EmployeeID)
 	if err != nil {
 		return nil, errors.New("invalid employee ID")
 	}

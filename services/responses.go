@@ -37,6 +37,7 @@ type LeaveResponse struct {
 	ApprovedBy string             `json:"approved_by,omitempty"`
 	RejectedBy string             `json:"rejected_by,omitempty"`
 	ReviewedAt string             `json:"reviewed_at,omitempty"`
+	User       *UserResponse      `json:"user,omitempty"`
 	CreatedAt  primitive.DateTime `json:"created_at,omitempty"`
 	UpdatedAt  primitive.DateTime `json:"updated_at,omitempty"`
 }
@@ -238,6 +239,30 @@ func ConvertLeaveToResponse(leave *models.Leave) (*LeaveResponse, error) {
 			return nil, fmt.Errorf("failed to encrypt rejected by ID: %w", err)
 		}
 		response.RejectedBy = encID
+	}
+
+	return response, nil
+}
+
+// ConvertLeaveToResponseWithUser converts LeaveWithUser to LeaveResponse with user data
+func ConvertLeaveToResponseWithUser(leave *LeaveWithUser) (*LeaveResponse, error) {
+	if leave == nil {
+		return nil, nil
+	}
+
+	// First convert the base leave
+	response, err := ConvertLeaveToResponse(&leave.Leave)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add user data if available
+	if leave.User != nil {
+		userResp, err := ConvertUserToResponse(leave.User)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert user: %w", err)
+		}
+		response.User = userResp
 	}
 
 	return response, nil

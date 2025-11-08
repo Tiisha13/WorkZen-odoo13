@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"api.workzen.odoo/constants"
+	"api.workzen.odoo/helpers"
 	"api.workzen.odoo/middlewares"
 	"api.workzen.odoo/services"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type LeaveController struct {
@@ -55,6 +55,12 @@ func (lc *LeaveController) ListLeaves(c *fiber.Ctx) error {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
 	}
 
+	// Get current user
+	user, err := middlewares.GetAuthUser(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
 	// Optional filters
 	filters := make(map[string]interface{})
 	if employeeIDStr := c.Query("employee_id"); employeeIDStr != "" {
@@ -64,18 +70,35 @@ func (lc *LeaveController) ListLeaves(c *fiber.Ctx) error {
 		filters["status"] = status
 	}
 
+	// For regular employees, filter to show only their own leaves
+	// HR and Admin can see all leaves
+	if !user.IsSuperAdmin && user.Role != "admin" && user.Role != "hr" {
+		userID, _ := middlewares.GetAuthUserID(c)
+		filters["employee_id"] = userID.Hex()
+	}
+
 	leaves, total, err := lc.service.ListLeaves(companyID, filters, page, limit)
 	if err != nil {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
 
-	return constants.HTTPSuccess.OkWithPagination(c, "Leaves retrieved successfully", leaves, page, limit, total)
+	// Convert to response format with populated user data
+	var responses []services.LeaveResponse
+	for _, leave := range leaves {
+		resp, err := services.ConvertLeaveToResponseWithUser(&leave)
+		if err != nil {
+			return constants.HTTPErrors.InternalServerError(c, err.Error())
+		}
+		responses = append(responses, *resp)
+	}
+
+	return constants.HTTPSuccess.OkWithPagination(c, "Leaves retrieved successfully", responses, page, limit, total)
 }
 
 // ApproveLeave approves a leave request
 func (lc *LeaveController) ApproveLeave(c *fiber.Ctx) error {
 	id := c.Params("id")
-	leaveID, err := primitive.ObjectIDFromHex(id)
+	leaveID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid leave ID")
 	}
@@ -96,7 +119,7 @@ func (lc *LeaveController) ApproveLeave(c *fiber.Ctx) error {
 // RejectLeave rejects a leave request
 func (lc *LeaveController) RejectLeave(c *fiber.Ctx) error {
 	id := c.Params("id")
-	leaveID, err := primitive.ObjectIDFromHex(id)
+	leaveID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid leave ID")
 	}

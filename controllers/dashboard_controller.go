@@ -17,6 +17,21 @@ func NewDashboardController() *DashboardController {
 	}
 }
 
+// GetDashboard retrieves dashboard statistics for any authenticated user
+func (dc *DashboardController) GetDashboard(c *fiber.Ctx) error {
+	companyID, err := middlewares.GetAuthCompanyID(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	stats, err := dc.service.GetAdminDashboard(companyID)
+	if err != nil {
+		return constants.HTTPErrors.InternalServerError(c, err.Error())
+	}
+
+	return constants.HTTPSuccess.OK(c, "Dashboard statistics retrieved successfully", stats)
+}
+
 // GetAdminDashboard retrieves dashboard statistics for company admins
 func (dc *DashboardController) GetAdminDashboard(c *fiber.Ctx) error {
 	companyID, err := middlewares.GetAuthCompanyID(c)

@@ -5,10 +5,10 @@ import (
 
 	"api.workzen.odoo/constants"
 	"api.workzen.odoo/databases/models"
+	"api.workzen.odoo/helpers"
 	"api.workzen.odoo/middlewares"
 	"api.workzen.odoo/services"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserController struct {
@@ -84,7 +84,7 @@ func (uc *UserController) ListUsers(c *fiber.Ctx) error {
 // GetUserByID retrieves a user by ID
 func (uc *UserController) GetUserByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	userID, err := primitive.ObjectIDFromHex(id)
+	userID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
 	}
@@ -97,10 +97,36 @@ func (uc *UserController) GetUserByID(c *fiber.Ctx) error {
 	return constants.HTTPSuccess.OK(c, "User retrieved successfully", user)
 }
 
+// UpdateUser updates user details
+func (uc *UserController) UpdateUser(c *fiber.Ctx) error {
+	id := c.Params("id")
+	userID, err := helpers.DecryptObjectID(id)
+	if err != nil {
+		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
+	}
+
+	var req services.UpdateUserRequest
+	if err := c.BodyParser(&req); err != nil {
+		return constants.HTTPErrors.BadRequest(c, "Invalid request body")
+	}
+
+	authUserID, err := middlewares.GetAuthUserID(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	user, err := uc.service.UpdateUser(userID, authUserID, &req)
+	if err != nil {
+		return constants.HTTPErrors.InternalServerError(c, err.Error())
+	}
+
+	return constants.HTTPSuccess.OK(c, "User updated successfully", user)
+}
+
 // UpdateUserStatus updates user status
 func (uc *UserController) UpdateUserStatus(c *fiber.Ctx) error {
 	id := c.Params("id")
-	userID, err := primitive.ObjectIDFromHex(id)
+	userID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
 	}
@@ -128,7 +154,7 @@ func (uc *UserController) UpdateUserStatus(c *fiber.Ctx) error {
 // UpdateBankDetails updates user bank details
 func (uc *UserController) UpdateBankDetails(c *fiber.Ctx) error {
 	id := c.Params("id")
-	userID, err := primitive.ObjectIDFromHex(id)
+	userID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
 	}
@@ -154,7 +180,7 @@ func (uc *UserController) UpdateBankDetails(c *fiber.Ctx) error {
 // DeleteUser soft deletes a user
 func (uc *UserController) DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
-	userID, err := primitive.ObjectIDFromHex(id)
+	userID, err := helpers.DecryptObjectID(id)
 	if err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
 	}
