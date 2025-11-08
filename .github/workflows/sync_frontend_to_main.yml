@@ -31,7 +31,7 @@ jobs:
       - name: Push frontend branch to /frontend folder on main
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           branch: main # The branch to deploy to
           
           # This is the source folder from the 'frontend' branch (use '.' for all files)
