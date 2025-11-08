@@ -31,6 +31,7 @@ This directory contains role-specific Postman collections for testing the WorkZe
 **Features:**
 
 - User management (create HR, Payroll, Employees)
+- Department management (create, update, delete departments)
 - Attendance monitoring
 - Leave approval/rejection
 - Salary structure management
@@ -53,6 +54,7 @@ This directory contains role-specific Postman collections for testing the WorkZe
 **Features:**
 
 - View all employee records
+- Department management (create, update departments)
 - Monitor attendance across company
 - Attendance statistics and summaries
 - Leave approval/rejection
@@ -97,6 +99,7 @@ This directory contains role-specific Postman collections for testing the WorkZe
 
 - Check-in/Check-out attendance
 - View my attendance history
+- View company departments (read-only)
 - Apply for leaves (casual, sick, etc.)
 - View my leave applications
 - View my salary structure
@@ -207,15 +210,16 @@ All collections use **Bearer Token** authentication:
 
 Each collection maintains its own variables:
 
-| Variable      | Purpose           | Auto-Set           |
-| ------------- | ----------------- | ------------------ |
-| `base_url`    | API endpoint      | No                 |
-| `*_token`     | Auth token        | Yes (on login)     |
-| `user_id`     | Current user ID   | Yes (on login)     |
-| `employee_id` | Target employee   | Yes (when created) |
-| `company_id`  | Company ID        | Yes (SuperAdmin)   |
-| `leave_id`    | Leave application | Yes (when created) |
-| `payroll_id`  | Payroll record    | Yes (when fetched) |
+| Variable        | Purpose           | Auto-Set           |
+| --------------- | ----------------- | ------------------ |
+| `base_url`      | API endpoint      | No                 |
+| `*_token`       | Auth token        | Yes (on login)     |
+| `user_id`       | Current user ID   | Yes (on login)     |
+| `employee_id`   | Target employee   | Yes (when created) |
+| `department_id` | Department ID     | Yes (when created) |
+| `company_id`    | Company ID        | Yes (SuperAdmin)   |
+| `leave_id`      | Leave application | Yes (when created) |
+| `payroll_id`    | Payroll record    | Yes (when fetched) |
 
 ---
 
@@ -260,7 +264,24 @@ Payroll Collection:
 4. Mark as paid
 ```
 
-### Scenario 4: Platform Management
+### Scenario 4: Department Setup and Assignment
+
+```
+Admin Collection:
+1. Create Engineering Department
+2. Create HR Department
+3. Create Sales Department
+
+Admin Collection:
+4. Create employee with department assignment
+5. List all employees
+6. View employee department info
+
+Employee Collection:
+7. Login and view all departments
+```
+
+### Scenario 5: Platform Management
 
 ```
 SuperAdmin Collection:

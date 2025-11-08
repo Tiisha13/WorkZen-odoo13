@@ -35,6 +35,11 @@
             "key": "employee_id",
             "value": "",
             "type": "string"
+        },
+        {
+            "key": "department_id",
+            "value": "",
+            "type": "string"
         }
     ],
     "item": [
@@ -354,6 +359,193 @@
                                 "{{employee_id}}"
                             ]
                         }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Department Management",
+            "item": [
+                {
+                    "name": "Create Department",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.id) {",
+                                    "        pm.collectionVariables.set('department_id', jsonData.data.id);",
+                                    "        console.log('Department created:', jsonData.data.id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Engineering\",\n  \"description\": \"Software Development Team\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/departments",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments"
+                            ]
+                        },
+                        "description": "Create a new department within the company"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List All Departments",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/departments?page=1&limit=50",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                }
+                            ]
+                        },
+                        "description": "List all departments in the company"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Department by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/departments/{{department_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments",
+                                "{{department_id}}"
+                            ]
+                        },
+                        "description": "Get details of a specific department"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Department",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Engineering - Updated\",\n  \"description\": \"Software Development and Quality Assurance Team\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/departments/{{department_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments",
+                                "{{department_id}}"
+                            ]
+                        },
+                        "description": "Update department details"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Department",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/departments/{{department_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments",
+                                "{{department_id}}"
+                            ]
+                        },
+                        "description": "Soft delete a department (only if no employees are assigned)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Employee with Department",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.user) {",
+                                    "        console.log('Employee with department created:', jsonData.data.user.id);",
+                                    "        console.log('Temp password:', jsonData.data.password);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"dev@workzen.com\",\n  \"first_name\": \"Developer\",\n  \"last_name\": \"Smith\",\n  \"phone\": \"+919876543225\",\n  \"role\": \"employee\",\n  \"designation\": \"Senior Developer\",\n  \"department_id\": \"{{department_id}}\",\n  \"date_of_join\": \"2025-11-08\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/users",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "users"
+                            ]
+                        },
+                        "description": "Example: Create employee and assign to a department"
                     },
                     "response": []
                 }

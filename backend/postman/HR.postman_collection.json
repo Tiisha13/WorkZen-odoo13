@@ -35,6 +35,11 @@
             "key": "leave_id",
             "value": "",
             "type": "string"
+        },
+        {
+            "key": "department_id",
+            "value": "",
+            "type": "string"
         }
     ],
     "item": [
@@ -201,6 +206,130 @@
                                 "{{employee_id}}"
                             ]
                         }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Department Management",
+            "item": [
+                {
+                    "name": "Create Department",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.id) {",
+                                    "        pm.collectionVariables.set('department_id', jsonData.data.id);",
+                                    "        console.log('Department created:', jsonData.data.id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Human Resources\",\n  \"description\": \"HR Department\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/departments",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments"
+                            ]
+                        },
+                        "description": "Create a new department"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List All Departments",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/departments?page=1&limit=50",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                }
+                            ]
+                        },
+                        "description": "List all departments in the company"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Department Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/departments/{{department_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments",
+                                "{{department_id}}"
+                            ]
+                        },
+                        "description": "Get details of a specific department"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Department",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"HR - Updated\",\n  \"description\": \"Human Resources and Administration\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/departments/{{department_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "departments",
+                                "{{department_id}}"
+                            ]
+                        },
+                        "description": "Update department details"
                     },
                     "response": []
                 }

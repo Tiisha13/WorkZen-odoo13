@@ -21,8 +21,8 @@ func Init() *fiber.App {
 		JSONDecoder:   json.Unmarshal,
 		Prefork:       isProduction(),
 		CaseSensitive: true,
-		ServerHeader:  "Accounts Server: WorkFlecks",
-		AppName:       "Accounts Server: WorkFlecks",
+		ServerHeader:  "WorkZen Backend",
+		AppName:       "WorkZen Backend",
 	})
 
 	app.Use(requestid.New())
