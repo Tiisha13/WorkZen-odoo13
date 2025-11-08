@@ -163,6 +163,26 @@ class ApiService {
     return this.handleResponse<ApiResponse>(response);
   }
 
+  async verifyEmail(token: string): Promise<ApiResponse> {
+    const response = await fetch(
+      `${API_ENDPOINTS.VERIFY_EMAIL}?token=${token}`,
+      {
+        method: "GET",
+        headers: this.getHeaders(false),
+      }
+    );
+    return this.handleResponse<ApiResponse>(response);
+  }
+
+  async resendVerification(email: string): Promise<ApiResponse> {
+    const response = await fetch(API_ENDPOINTS.RESEND_VERIFICATION, {
+      method: "POST",
+      headers: this.getHeaders(false),
+      body: JSON.stringify({ email }),
+    });
+    return this.handleResponse<ApiResponse>(response);
+  }
+
   logout(): void {
     this.removeToken();
   }

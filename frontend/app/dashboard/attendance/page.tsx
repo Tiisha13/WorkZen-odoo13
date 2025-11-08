@@ -50,7 +50,11 @@ export default function AttendancePage() {
         success: boolean;
         data: Attendance[];
       }>(API_ENDPOINTS.ATTENDANCES);
-      setAttendances(response.data || []);
+      // Sort by date, newest first
+      const sortedData = (response.data || []).sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      setAttendances(sortedData);
     } catch (error) {
       console.error("Failed to fetch attendances:", error);
       setAttendances([]);
@@ -81,13 +85,25 @@ export default function AttendancePage() {
   const handleCheckIn = async () => {
     try {
       setCheckingIn(true);
-      await apiService.post(API_ENDPOINTS.ATTENDANCE_CHECKIN, {
+      const response = await apiService.post<{
+        success: boolean;
+        data: Attendance;
+      }>(API_ENDPOINTS.ATTENDANCE_CHECKIN, {
         user_id: user?.id,
         date: new Date().toISOString(),
       });
-      toast.success("Checked in successfully");
-      fetchAttendances();
-      fetchTodayAttendance();
+
+      if (response.success && response.data) {
+        // Immediately update today's attendance
+        setTodayAttendance(response.data);
+        // Add to top of attendances list
+        setAttendances((prev) => [response.data, ...prev]);
+        toast.success("Checked in successfully");
+      }
+
+      // Still fetch to ensure we have the latest data
+      await fetchAttendances();
+      await fetchTodayAttendance();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to check in"
@@ -101,13 +117,27 @@ export default function AttendancePage() {
     if (!todayAttendance) return;
     try {
       setCheckingIn(true);
-      await apiService.post(API_ENDPOINTS.ATTENDANCE_CHECKOUT, {
+      const response = await apiService.post<{
+        success: boolean;
+        data: Attendance;
+      }>(API_ENDPOINTS.ATTENDANCE_CHECKOUT, {
         attendance_id: todayAttendance.id,
         date: new Date().toISOString(),
       });
-      toast.success("Checked out successfully");
-      fetchAttendances();
-      fetchTodayAttendance();
+
+      if (response.success && response.data) {
+        // Immediately update today's attendance
+        setTodayAttendance(response.data);
+        // Update the record in the attendances list
+        setAttendances((prev) =>
+          prev.map((att) => (att.id === response.data.id ? response.data : att))
+        );
+        toast.success("Checked out successfully");
+      }
+
+      // Still fetch to ensure we have the latest data
+      await fetchAttendances();
+      await fetchTodayAttendance();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to check out"
@@ -117,15 +147,21 @@ export default function AttendancePage() {
     }
   };
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
+  const formatTime = (dateString: string | undefined) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid Date";
+    return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
     });
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid Date";
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -163,20 +199,40 @@ export default function AttendancePage() {
             <div className="space-y-2">
               {todayAttendance ? (
                 <>
-                  <p className="text-sm text-muted-foreground">
-                    Check-in:{" "}
-                    <span className="font-medium text-foreground">
-                      {formatTime(todayAttendance.check_in)}
-                    </span>
-                  </p>
-                  {todayAttendance.check_out && (
-                    <p className="text-sm text-muted-foreground">
-                      Check-out:{" "}
-                      <span className="font-medium text-foreground">
-                        {formatTime(todayAttendance.check_out)}
-                      </span>
-                    </p>
-                  )}
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Check-in</p>
+                      <p className="text-lg font-semibold">
+                        {formatTime(todayAttendance.check_in)}
+                      </p>
+                    </div>
+                    {todayAttendance.check_out && (
+                      <>
+                        <div className="text-muted-foreground">→</div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Check-out
+                          </p>
+                          <p className="text-lg font-semibold">
+                            {formatTime(todayAttendance.check_out)}
+                          </p>
+                        </div>
+                        {todayAttendance.working_hours && (
+                          <>
+                            <div className="text-muted-foreground">•</div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Working Hours
+                              </p>
+                              <p className="text-lg font-semibold">
+                                {todayAttendance.working_hours.toFixed(2)}h
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -188,7 +244,7 @@ export default function AttendancePage() {
               {!todayAttendance ? (
                 <Button onClick={handleCheckIn} disabled={checkingIn}>
                   <IconClock className="w-4 h-4 mr-2" />
-                  Check In
+                  {checkingIn ? "Checking In..." : "Check In"}
                 </Button>
               ) : !todayAttendance.check_out ? (
                 <Button
@@ -197,10 +253,10 @@ export default function AttendancePage() {
                   variant="destructive"
                 >
                   <IconClockStop className="w-4 h-4 mr-2" />
-                  Check Out
+                  {checkingIn ? "Checking Out..." : "Check Out"}
                 </Button>
               ) : (
-                <Badge variant="outline" className="text-green-600">
+                <Badge variant="outline" className="text-green-600 px-4 py-2">
                   <IconCalendar className="w-4 h-4 mr-2" />
                   Completed
                 </Badge>

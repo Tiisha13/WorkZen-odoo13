@@ -13,10 +13,22 @@ import { User } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/config";
 
 interface ProfileFormProps {
-  user: User;
+  user: User | null;
 }
 
 export function ProfileForm({ user }: ProfileFormProps) {
+  if (!user) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <p className="text-center text-muted-foreground">
+            Loading user data...
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -29,22 +41,22 @@ export function ProfileForm({ user }: ProfileFormProps) {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>First Name</Label>
-            <Input value={user.first_name} disabled />
+            <Input value={user.first_name || ""} disabled />
           </div>
           <div className="space-y-2">
             <Label>Last Name</Label>
-            <Input value={user.last_name} disabled />
+            <Input value={user.last_name || ""} disabled />
           </div>
         </div>
 
         <div className="space-y-2">
           <Label>Username</Label>
-          <Input value={user.username} disabled />
+          <Input value={user.username || ""} disabled />
         </div>
 
         <div className="space-y-2">
           <Label>Email</Label>
-          <Input value={user.email} type="email" disabled />
+          <Input value={user.email || ""} type="email" disabled />
         </div>
 
         <div className="space-y-2">
@@ -56,7 +68,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
           <Label>Role</Label>
           <Input
             value={
-              ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] || user.role
+              user.role
+                ? ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ||
+                  user.role
+                : "Not assigned"
             }
             disabled
           />

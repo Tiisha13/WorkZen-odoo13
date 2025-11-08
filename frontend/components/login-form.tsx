@@ -125,6 +125,15 @@ export function LoginForm({
                     Sign up
                   </Link>
                 </FieldDescription>
+                <FieldDescription className="text-center mt-2">
+                  Didn&apos;t receive verification email?{" "}
+                  <Link
+                    href="/resend-verification"
+                    className="underline underline-offset-4 hover:text-primary"
+                  >
+                    Resend
+                  </Link>
+                </FieldDescription>
               </Field>
             </FieldGroup>
           </form>

@@ -1,10 +1,22 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { apiService } from '@/lib/api-service';
-import type { User, Company, LoginRequest, SignupRequest, ChangePasswordRequest } from '@/lib/types';
-import { toast } from 'sonner';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { useRouter } from "next/navigation";
+import { apiService } from "@/lib/api-service";
+import type {
+  User,
+  Company,
+  LoginRequest,
+  SignupRequest,
+  ChangePasswordRequest,
+} from "@/lib/types";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -37,16 +49,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         const companyData = apiService.getCompany();
         setCompany(companyData);
+      } else {
+        // No token, clear everything
+        setUser(null);
+        setCompany(null);
       }
     } catch (error) {
-      console.error('Failed to load user:', error);
+      console.error("Failed to load user:", error);
+      // Clear auth on error
       apiService.logout();
       setUser(null);
       setCompany(null);
+
+      // Only redirect if we're not already on login/signup pages
+      if (typeof window !== "undefined") {
+        const path = window.location.pathname;
+        if (!path.includes("/login") && !path.includes("/signup")) {
+          router.push("/login");
+        }
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     loadUser();
@@ -58,10 +83,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiService.login(credentials);
       setUser(response.user);
       if (response.company) setCompany(response.company);
-      toast.success('Login successful!');
-      router.push('/dashboard');
+      toast.success("Login successful!");
+      router.push("/dashboard");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed');
+      toast.error(error instanceof Error ? error.message : "Login failed");
       throw error;
     } finally {
       setIsLoading(false);
@@ -72,23 +97,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       await apiService.signup(data);
-      toast.success('Signup successful! Please check your email for verification.');
-      router.push('/login');
+      toast.success(
+        "Signup successful! Please check your email for verification."
+      );
+      router.push("/login");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Signup failed');
+      toast.error(error instanceof Error ? error.message : "Signup failed");
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    // Clear API service storage
     apiService.logout();
+
+    // Clear state
     setUser(null);
     setCompany(null);
-    toast.info('Logged out successfully');
-    router.push('/login');
-  };
+
+    // Show toast
+    toast.info("Logged out successfully");
+
+    // Redirect to login
+    router.push("/login");
+
+    // Force reload to clear any cached state
+    if (typeof window !== "undefined") {
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 100);
+    }
+  }, [router]);
 
   const refreshUser = async () => {
     await loadUser();
@@ -98,9 +139,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       await apiService.changePassword(data);
-      toast.success('Password changed successfully!');
+      toast.success("Password changed successfully!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to change password');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to change password"
+      );
       throw error;
     } finally {
       setIsLoading(false);
@@ -137,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
