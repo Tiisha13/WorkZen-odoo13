@@ -326,11 +326,20 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	// Find user by username or email (exclude soft-deleted users)
 	var user models.User
 	err := usersCollection.FindOne(ctx, bson.M{
-		"$or": []bson.M{
-			{"username": req.Username},
-			{"email": req.Username},
+		"$and": []bson.M{
+			{
+				"$or": []bson.M{
+					{"username": req.Username},
+					{"email": req.Username},
+				},
+			},
+			{
+				"$or": []bson.M{
+					{"is_deleted": false},
+					{"is_deleted": bson.M{"$exists": false}},
+				},
+			},
 		},
-		"is_deleted": false,
 	}).Decode(&user)
 	if err != nil {
 		return nil, errors.New("invalid username or password")
