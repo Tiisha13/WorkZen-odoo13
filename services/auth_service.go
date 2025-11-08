@@ -75,6 +75,31 @@ type UserResponse struct {
 	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty"`
 }
 
+// CompanyResponse represents company data with encrypted IDs for API responses
+type CompanyResponse struct {
+	ID         string             `json:"id,omitempty"`
+	Name       string             `json:"name"`
+	Email      string             `json:"email"`
+	Phone      string             `json:"phone,omitempty"`
+	Industry   string             `json:"industry,omitempty"`
+	Website    string             `json:"website,omitempty"`
+	LogoURL    string             `json:"logo_url,omitempty"`
+	Address    models.Address     `json:"address,omitempty"`
+	OwnerID    string             `json:"owner_id,omitempty"`
+	ApprovedBy string             `json:"approved_by,omitempty"`
+	IsApproved bool               `json:"is_approved"`
+	IsActive   bool               `json:"is_active"`
+	CreatedAt  primitive.DateTime `json:"created_at,omitempty"`
+	UpdatedAt  primitive.DateTime `json:"updated_at,omitempty"`
+}
+
+// LoginResponse represents the complete login response with user and company info
+type LoginResponse struct {
+	Token   string           `json:"token"`
+	User    *UserResponse    `json:"user"`
+	Company *CompanyResponse `json:"company,omitempty"`
+}
+
 // convertUserToResponse converts User model to UserResponse with encrypted IDs
 func convertUserToResponse(user *models.User) (*UserResponse, error) {
 	if user == nil {
@@ -138,6 +163,56 @@ func convertUserToResponse(user *models.User) (*UserResponse, error) {
 			return nil, fmt.Errorf("failed to encrypt manager ID: %w", err)
 		}
 		response.ManagerID = encryptedManagerID
+	}
+
+	return response, nil
+}
+
+// convertCompanyToResponse converts Company model to CompanyResponse with encrypted IDs
+func convertCompanyToResponse(company *models.Company) (*CompanyResponse, error) {
+	if company == nil {
+		return nil, errors.New("company is nil")
+	}
+
+	response := &CompanyResponse{
+		Name:       company.Name,
+		Email:      company.Email,
+		Phone:      company.Phone,
+		Industry:   company.Industry,
+		Website:    company.Website,
+		LogoURL:    company.LogoURL,
+		Address:    company.Address,
+		IsApproved: company.IsApproved,
+		IsActive:   company.IsActive,
+		CreatedAt:  company.CreatedAt,
+		UpdatedAt:  company.UpdatedAt,
+	}
+
+	// Encrypt company ID
+	if !company.ID.IsZero() {
+		encryptedID, err := encryptions.EncryptID(company.ID.Hex())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt company ID: %w", err)
+		}
+		response.ID = encryptedID
+	}
+
+	// Encrypt owner ID
+	if !company.OwnerID.IsZero() {
+		encryptedOwnerID, err := encryptions.EncryptID(company.OwnerID.Hex())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt owner ID: %w", err)
+		}
+		response.OwnerID = encryptedOwnerID
+	}
+
+	// Encrypt approved by ID
+	if !company.ApprovedBy.IsZero() {
+		encryptedApprovedBy, err := encryptions.EncryptID(company.ApprovedBy.Hex())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt approved by ID: %w", err)
+		}
+		response.ApprovedBy = encryptedApprovedBy
 	}
 
 	return response, nil
@@ -218,11 +293,12 @@ func (s *AuthService) Signup(req *SignupRequest) error {
 }
 
 // Login authenticates user and generates JWT token
-func (s *AuthService) Login(req *LoginRequest) (string, *UserResponse, error) {
+func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
+	companiesCollection := databases.MongoDBDatabase.Collection(collections.Companies)
 
 	// Find user by username or email
 	var user models.User
@@ -233,34 +309,41 @@ func (s *AuthService) Login(req *LoginRequest) (string, *UserResponse, error) {
 		},
 	}).Decode(&user)
 	if err != nil {
-		return "", nil, errors.New("invalid username or password")
+		return nil, errors.New("invalid username or password")
 	}
 
 	// Verify password
 	if !encryptions.ComparePassword(req.Password, user.Password) {
-		return "", nil, errors.New("invalid username or password")
+		return nil, errors.New("invalid username or password")
 	}
 
 	// Check if user is active
 	if user.Status != models.UserActive {
-		return "", nil, errors.New("user account is inactive")
+		return nil, errors.New("user account is inactive")
 	}
+
+	var company models.Company
+	var companyResponse *CompanyResponse
 
 	// If user belongs to a company, check if company is approved and active
 	if !user.IsSuperAdmin {
-		companiesCollection := databases.MongoDBDatabase.Collection(collections.Companies)
-		var company models.Company
 		err = companiesCollection.FindOne(ctx, bson.M{"_id": user.Company}).Decode(&company)
 		if err != nil {
-			return "", nil, errors.New("company not found")
+			return nil, errors.New("company not found")
 		}
 
 		if !company.IsApproved {
-			return "", nil, errors.New("company registration is pending approval")
+			return nil, errors.New("company registration is pending approval")
 		}
 
 		if !company.IsActive {
-			return "", nil, errors.New("company account is inactive")
+			return nil, errors.New("company account is inactive")
+		}
+
+		// Convert company to response with encrypted IDs
+		companyResponse, err = convertCompanyToResponse(&company)
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare company response: %w", err)
 		}
 	}
 
@@ -276,7 +359,7 @@ func (s *AuthService) Login(req *LoginRequest) (string, *UserResponse, error) {
 
 	token, err := helpers.GenerateJWT(payload, expireTime)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to generate token: %w", err)
+		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
 	// Update last login
@@ -292,10 +375,17 @@ func (s *AuthService) Login(req *LoginRequest) (string, *UserResponse, error) {
 	// Convert user to response with encrypted IDs
 	userResponse, err := convertUserToResponse(&user)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to prepare user response: %w", err)
+		return nil, fmt.Errorf("failed to prepare user response: %w", err)
 	}
 
-	return token, userResponse, nil
+	// Prepare login response
+	loginResponse := &LoginResponse{
+		Token:   token,
+		User:    userResponse,
+		Company: companyResponse,
+	}
+
+	return loginResponse, nil
 }
 
 // GetUserProfile retrieves user profile by ID
