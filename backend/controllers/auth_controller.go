@@ -40,14 +40,15 @@ func (ctrl *AuthController) Login(c *fiber.Ctx) error {
 		return constants.HTTPErrors.BadRequest(c, "Invalid request body")
 	}
 
-	token, user, err := ctrl.authService.Login(&req)
+	loginResponse, err := ctrl.authService.Login(&req)
 	if err != nil {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
 	}
 
 	return constants.HTTPSuccess.OK(c, "Login successful", fiber.Map{
-		"token": token,
-		"user":  user,
+		"token":   loginResponse.Token,
+		"user":    loginResponse.User,
+		"company": loginResponse.Company,
 	})
 }
 
