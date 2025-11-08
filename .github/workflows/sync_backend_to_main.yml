@@ -1,0 +1,36 @@
+# This workflow syncs the 'backend' branch to the /backend folder on 'main'
+
+name: Sync Backend to Main
+
+on:
+    # Trigger this workflow only on pushes to the 'backend' branch
+    push:
+        branches:
+            - backend
+
+jobs:
+    sync-backend:
+        runs-on: ubuntu-latest
+        steps:
+            # 1. Check out the code from the 'backend' branch
+            - name: Checkout Backend Code
+              uses: actions/checkout@v4
+
+            # 2. SYNC THE 'backend' BRANCH TO THE '/backend' FOLDER ON 'main':
+            - name: Push backend branch to /backend folder on main
+              uses: JamesIves/github-pages-deploy-action@v4
+              with:
+                  token: ${{ secrets.TOKEN }}
+                  branch: main # The branch to deploy to
+
+                  # This is the source folder from the 'backend' branch (use '.' for all files)
+                  folder: .
+
+                  # THIS IS THE KEY: It places the files in the '/backend' subfolder on 'main'
+                  target-folder: backend
+
+                  # IMPORTANT: Set clean to false.
+                  # This stops this workflow from deleting the /frontend folder.
+                  clean: false
+
+                  commit-message: "Sync backend: ${{ github.event.head_commit.message }}"

@@ -1,0 +1,47 @@
+# This workflow syncs the 'frontend' branch to the /frontend folder on 'main'
+
+name: Sync Frontend to Main
+
+on:
+    # Trigger this workflow only on pushes to the 'frontend' branch
+    push:
+        branches:
+            - frontend
+
+jobs:
+    sync-frontend:
+        runs-on: ubuntu-latest
+        steps:
+            # 1. Check out the code from the 'frontend' branch
+            - name: Checkout Frontend Code
+              uses: actions/checkout@v4
+
+            # 2. (OPTIONAL) RUN A BUILD STEP:
+            # If your 'frontend' branch needs to be built first, uncomment these lines.
+            #
+            # - name: Install Dependencies and Build
+            #   run: |
+            #     npm install
+            #     npm run build
+            #
+            # (If you use a build step, make sure the 'folder:' option below
+            # points to your build output directory, e.g., './dist')
+
+            # 3. SYNC THE 'frontend' BRANCH TO THE '/frontend' FOLDER ON 'main':
+            - name: Push frontend branch to /frontend folder on main
+              uses: JamesIves/github-pages-deploy-action@v4
+              with:
+                  token: ${{ secrets.TOKEN }}
+                  branch: main # The branch to deploy to
+
+                  # This is the source folder from the 'frontend' branch (use '.' for all files)
+                  folder: .
+
+                  # THIS IS THE KEY: It places the files in the '/frontend' subfolder on 'main'
+                  target-folder: frontend
+
+                  # IMPORTANT: Set clean to false.
+                  # This stops this workflow from deleting the /backend folder.
+                  clean: false
+
+                  commit-message: "Sync frontend: ${{ github.event.head_commit.message }}"
