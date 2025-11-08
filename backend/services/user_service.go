@@ -37,7 +37,7 @@ type CreateUserRequest struct {
 }
 
 // CreateUser creates a new user within a company
-func (s *UserService) CreateUser(req *CreateUserRequest, companyID primitive.ObjectID) (*UserResponse, string, error) {
+func (s *UserService) CreateUser(req *CreateUserRequest, companyID, authUserID primitive.ObjectID) (*UserResponse, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -86,20 +86,29 @@ func (s *UserService) CreateUser(req *CreateUserRequest, companyID primitive.Obj
 	tempPassword := generateRandomPassword(8)
 	hashedPassword := encryptions.HashPassword(tempPassword)
 
-	// Create user
+	// Generate email verification token
+	verificationToken, err := helpers.GenerateVerificationToken()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to generate verification token: %w", err)
+	}
+
+	// Create user (unverified initially)
 	user := models.User{
-		ID:          primitive.NewObjectID(),
-		Username:    username,
-		Email:       req.Email,
-		Password:    hashedPassword,
-		FirstName:   req.FirstName,
-		LastName:    req.LastName,
-		Role:        req.Role,
-		Designation: req.Designation,
-		DateOfJoin:  joinDate.Format("2006-01-02"),
-		Status:      models.UserActive,
-		Phone:       req.Phone,
-		Company:     companyID,
+		ID:                     primitive.NewObjectID(),
+		Username:               username,
+		Email:                  req.Email,
+		Password:               hashedPassword,
+		FirstName:              req.FirstName,
+		LastName:               req.LastName,
+		Role:                   req.Role,
+		Designation:            req.Designation,
+		DateOfJoin:             joinDate.Format("2006-01-02"),
+		Status:                 models.UserActive,
+		Phone:                  req.Phone,
+		Company:                companyID,
+		EmailVerified:          false,
+		EmailVerificationToken: verificationToken,
+		TokenExpiry:            primitive.NewDateTimeFromTime(helpers.VerificationTokenExpiry()),
 	}
 
 	if req.DepartmentID != nil {
@@ -109,13 +118,22 @@ func (s *UserService) CreateUser(req *CreateUserRequest, companyID primitive.Obj
 		user.ManagerID = *req.ManagerID
 	}
 
-	user.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
-	user.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	// Set timestamps with creator information
+	user.CreatedAt, user.CreatedBy = helpers.SetCreatedTimestamp(authUserID)
+	user.UpdatedAt, user.UpdatedBy = helpers.SetUpdatedTimestamp(authUserID)
+	user.IsDeleted = false
 
 	_, err = usersCollection.InsertOne(ctx, user)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create user: %w", err)
 	}
+
+	// Send employee invitation email with verification link and temp password (non-blocking)
+	go func() {
+		if err := helpers.SendEmployeeInvitationEmail(req.Email, req.FirstName, company.Name, username, tempPassword, verificationToken); err != nil {
+			fmt.Printf("Failed to send invitation email to %s: %v\n", req.Email, err)
+		}
+	}()
 
 	// Remove password from response
 	user.Password = ""
@@ -136,8 +154,9 @@ func (s *UserService) ListUsers(companyID primitive.ObjectID, filters map[string
 
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
 
-	// Add company filter
+	// Add company filter and exclude soft-deleted records
 	filters["company"] = companyID
+	filters["is_deleted"] = false
 
 	skip := (page - 1) * limit
 	opts := options.Find().
@@ -183,7 +202,7 @@ func (s *UserService) GetUserByID(userID primitive.ObjectID) (*UserResponse, err
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
 
 	var user models.User
-	err := usersCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	err := usersCollection.FindOne(ctx, bson.M{"_id": userID, "is_deleted": false}).Decode(&user)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -201,19 +220,22 @@ func (s *UserService) GetUserByID(userID primitive.ObjectID) (*UserResponse, err
 }
 
 // UpdateUserStatus updates user active/inactive status
-func (s *UserService) UpdateUserStatus(userID primitive.ObjectID, status models.UserStatus) error {
+func (s *UserService) UpdateUserStatus(userID, authUserID primitive.ObjectID, status models.UserStatus) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
 
+	updatedAt, updatedBy := helpers.SetUpdatedTimestamp(authUserID)
+
 	result, err := usersCollection.UpdateOne(
 		ctx,
-		bson.M{"_id": userID},
+		bson.M{"_id": userID, "is_deleted": false},
 		bson.M{
 			"$set": bson.M{
 				"status":     status,
-				"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+				"updated_at": updatedAt,
+				"updated_by": updatedBy,
 			},
 		},
 	)
@@ -235,7 +257,7 @@ type UpdateBankDetailsRequest struct {
 }
 
 // UpdateBankDetails updates user's bank information
-func (s *UserService) UpdateBankDetails(userID primitive.ObjectID, req *UpdateBankDetailsRequest) error {
+func (s *UserService) UpdateBankDetails(userID, authUserID primitive.ObjectID, req *UpdateBankDetailsRequest) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -250,13 +272,16 @@ func (s *UserService) UpdateBankDetails(userID primitive.ObjectID, req *UpdateBa
 		UANNo:         req.UANNo,
 	}
 
+	updatedAt, updatedBy := helpers.SetUpdatedTimestamp(authUserID)
+
 	result, err := usersCollection.UpdateOne(
 		ctx,
-		bson.M{"_id": userID},
+		bson.M{"_id": userID, "is_deleted": false},
 		bson.M{
 			"$set": bson.M{
 				"bank_details": bankDetails,
-				"updated_at":   primitive.NewDateTimeFromTime(time.Now()),
+				"updated_at":   updatedAt,
+				"updated_by":   updatedBy,
 			},
 		},
 	)
@@ -267,26 +292,31 @@ func (s *UserService) UpdateBankDetails(userID primitive.ObjectID, req *UpdateBa
 	return nil
 }
 
-// DeleteUser soft deletes a user (marks as inactive)
-func (s *UserService) DeleteUser(userID primitive.ObjectID) error {
+// DeleteUser soft deletes a user (marks as deleted)
+func (s *UserService) DeleteUser(userID, authUserID primitive.ObjectID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
 
+	deletedAt, deletedBy := helpers.SetDeletedTimestamp(authUserID)
+
 	result, err := usersCollection.UpdateOne(
 		ctx,
-		bson.M{"_id": userID},
+		bson.M{"_id": userID, "is_deleted": false},
 		bson.M{
 			"$set": bson.M{
 				"status":     models.UserInactive,
-				"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
-				"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+				"is_deleted": true,
+				"deleted_at": &deletedAt,
+				"deleted_by": &deletedBy,
+				"updated_at": deletedAt,
+				"updated_by": deletedBy,
 			},
 		},
 	)
 	if err != nil || result.MatchedCount == 0 {
-		return errors.New("user not found")
+		return errors.New("user not found or already deleted")
 	}
 
 	return nil

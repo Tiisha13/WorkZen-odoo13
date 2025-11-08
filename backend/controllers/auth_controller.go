@@ -86,3 +86,36 @@ func (ctrl *AuthController) ChangePassword(c *fiber.Ctx) error {
 
 	return constants.HTTPSuccess.OKWithoutData(c, "Password changed successfully")
 }
+
+// VerifyEmail handles GET /api/v1/auth/verify-email
+func (ctrl *AuthController) VerifyEmail(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return constants.HTTPErrors.BadRequest(c, "Verification token is required")
+	}
+
+	err := ctrl.authService.VerifyEmail(token)
+	if err != nil {
+		return constants.HTTPErrors.BadRequest(c, err.Error())
+	}
+
+	return constants.HTTPSuccess.OKWithoutData(c, "Email verified successfully! Your account is now pending admin approval.")
+}
+
+// ResendVerificationEmail handles POST /api/v1/auth/resend-verification
+func (ctrl *AuthController) ResendVerificationEmail(c *fiber.Ctx) error {
+	var req struct {
+		Email string `json:"email" validate:"required,email"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return constants.HTTPErrors.BadRequest(c, "Invalid request body")
+	}
+
+	err := ctrl.authService.ResendVerificationEmail(req.Email)
+	if err != nil {
+		return constants.HTTPErrors.BadRequest(c, err.Error())
+	}
+
+	return constants.HTTPSuccess.OKWithoutData(c, "Verification email sent successfully")
+}

@@ -33,7 +33,12 @@ func (uc *UserController) CreateUser(c *fiber.Ctx) error {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
 	}
 
-	user, password, err := uc.service.CreateUser(&req, companyID)
+	authUserID, err := middlewares.GetAuthUserID(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	user, password, err := uc.service.CreateUser(&req, companyID, authUserID)
 	if err != nil {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
@@ -100,6 +105,11 @@ func (uc *UserController) UpdateUserStatus(c *fiber.Ctx) error {
 		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
 	}
 
+	authUserID, err := middlewares.GetAuthUserID(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
 	var req struct {
 		Status string `json:"status"`
 	}
@@ -107,7 +117,7 @@ func (uc *UserController) UpdateUserStatus(c *fiber.Ctx) error {
 		return constants.HTTPErrors.BadRequest(c, "Invalid request body")
 	}
 
-	err = uc.service.UpdateUserStatus(userID, models.UserStatus(req.Status))
+	err = uc.service.UpdateUserStatus(userID, authUserID, models.UserStatus(req.Status))
 	if err != nil {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
@@ -123,12 +133,17 @@ func (uc *UserController) UpdateBankDetails(c *fiber.Ctx) error {
 		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
 	}
 
+	authUserID, err := middlewares.GetAuthUserID(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
 	var req services.UpdateBankDetailsRequest
 	if err := c.BodyParser(&req); err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid request body")
 	}
 
-	err = uc.service.UpdateBankDetails(userID, &req)
+	err = uc.service.UpdateBankDetails(userID, authUserID, &req)
 	if err != nil {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
@@ -144,7 +159,12 @@ func (uc *UserController) DeleteUser(c *fiber.Ctx) error {
 		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
 	}
 
-	err = uc.service.DeleteUser(userID)
+	authUserID, err := middlewares.GetAuthUserID(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	err = uc.service.DeleteUser(userID, authUserID)
 	if err != nil {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
