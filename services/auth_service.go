@@ -326,11 +326,20 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	// Find user by username or email (exclude soft-deleted users)
 	var user models.User
 	err := usersCollection.FindOne(ctx, bson.M{
-		"$or": []bson.M{
-			{"username": req.Username},
-			{"email": req.Username},
+		"$and": []bson.M{
+			{
+				"$or": []bson.M{
+					{"username": req.Username},
+					{"email": req.Username},
+				},
+			},
+			{
+				"$or": []bson.M{
+					{"is_deleted": false},
+					{"is_deleted": bson.M{"$exists": false}},
+				},
+			},
 		},
-		"is_deleted": false,
 	}).Decode(&user)
 	if err != nil {
 		return nil, errors.New("invalid username or password")
@@ -356,7 +365,7 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 
 	// If user belongs to a company, check if company is approved and active
 	if !user.IsSuperAdmin {
-		err = companiesCollection.FindOne(ctx, bson.M{"_id": user.Company, "is_deleted": false}).Decode(&company)
+		err = companiesCollection.FindOne(ctx, helpers.AddNotDeletedFilter(bson.M{"_id": user.Company})).Decode(&company)
 		if err != nil {
 			return nil, errors.New("company not found")
 		}

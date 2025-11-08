@@ -80,11 +80,10 @@ func (s *DepartmentService) CreateDepartment(req *CreateDepartmentRequest, compa
 	departmentsCollection := databases.MongoDBDatabase.Collection(collections.Departments)
 
 	// Check if department with same name already exists in this company
-	count, err := departmentsCollection.CountDocuments(ctx, bson.M{
-		"name":       req.Name,
-		"company":    companyID,
-		"is_deleted": false,
-	})
+	count, err := departmentsCollection.CountDocuments(ctx, helpers.AddNotDeletedFilter(bson.M{
+		"name":    req.Name,
+		"company": companyID,
+	}))
 	if err != nil {
 		return nil, err
 	}
@@ -125,10 +124,9 @@ func (s *DepartmentService) ListDepartments(companyID primitive.ObjectID, page, 
 	departmentsCollection := databases.MongoDBDatabase.Collection(collections.Departments)
 
 	// Filter by company and exclude soft-deleted records
-	filters := bson.M{
-		"company":    companyID,
-		"is_deleted": false,
-	}
+	query := helpers.AddNotDeletedFilter(bson.M{
+		"company": companyID,
+	})
 
 	skip := (page - 1) * limit
 	opts := options.Find().
@@ -136,7 +134,7 @@ func (s *DepartmentService) ListDepartments(companyID primitive.ObjectID, page, 
 		SetLimit(limit).
 		SetSort(bson.D{{Key: "name", Value: 1}})
 
-	cursor, err := departmentsCollection.Find(ctx, filters, opts)
+	cursor, err := departmentsCollection.Find(ctx, query, opts)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -148,7 +146,7 @@ func (s *DepartmentService) ListDepartments(companyID primitive.ObjectID, page, 
 	}
 
 	// Get total count
-	total, err := departmentsCollection.CountDocuments(ctx, filters)
+	total, err := departmentsCollection.CountDocuments(ctx, query)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -174,11 +172,10 @@ func (s *DepartmentService) GetDepartmentByID(departmentID, companyID primitive.
 	departmentsCollection := databases.MongoDBDatabase.Collection(collections.Departments)
 
 	var department models.Department
-	err := departmentsCollection.FindOne(ctx, bson.M{
-		"_id":        departmentID,
-		"company":    companyID,
-		"is_deleted": false,
-	}).Decode(&department)
+	err := departmentsCollection.FindOne(ctx, helpers.AddNotDeletedFilter(bson.M{
+		"_id":     departmentID,
+		"company": companyID,
+	})).Decode(&department)
 	if err != nil {
 		return nil, errors.New("department not found")
 	}
@@ -202,12 +199,11 @@ func (s *DepartmentService) UpdateDepartment(departmentID, companyID, authUserID
 
 	// Check if department with same name already exists (excluding current department)
 	if req.Name != "" {
-		count, err := departmentsCollection.CountDocuments(ctx, bson.M{
-			"name":       req.Name,
-			"company":    companyID,
-			"_id":        bson.M{"$ne": departmentID},
-			"is_deleted": false,
-		})
+		count, err := departmentsCollection.CountDocuments(ctx, helpers.AddNotDeletedFilter(bson.M{
+			"name":    req.Name,
+			"company": companyID,
+			"_id":     bson.M{"$ne": departmentID},
+		}))
 		if err != nil {
 			return err
 		}
@@ -234,11 +230,10 @@ func (s *DepartmentService) UpdateDepartment(departmentID, companyID, authUserID
 
 	result, err := departmentsCollection.UpdateOne(
 		ctx,
-		bson.M{
-			"_id":        departmentID,
-			"company":    companyID,
-			"is_deleted": false,
-		},
+		helpers.AddNotDeletedFilter(bson.M{
+			"_id":     departmentID,
+			"company": companyID,
+		}),
 		bson.M{"$set": updateFields},
 	)
 	if err != nil || result.MatchedCount == 0 {
@@ -257,11 +252,10 @@ func (s *DepartmentService) DeleteDepartment(departmentID, companyID, authUserID
 
 	// Check if any employees are assigned to this department
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
-	count, err := usersCollection.CountDocuments(ctx, bson.M{
+	count, err := usersCollection.CountDocuments(ctx, helpers.AddNotDeletedFilter(bson.M{
 		"department_id": departmentID,
 		"company":       companyID,
-		"is_deleted":    false,
-	})
+	}))
 	if err != nil {
 		return err
 	}
@@ -273,11 +267,10 @@ func (s *DepartmentService) DeleteDepartment(departmentID, companyID, authUserID
 
 	result, err := departmentsCollection.UpdateOne(
 		ctx,
-		bson.M{
-			"_id":        departmentID,
-			"company":    companyID,
-			"is_deleted": false,
-		},
+		helpers.AddNotDeletedFilter(bson.M{
+			"_id":     departmentID,
+			"company": companyID,
+		}),
 		bson.M{
 			"$set": bson.M{
 				"is_deleted": true,

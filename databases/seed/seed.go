@@ -34,9 +34,9 @@ func SeedDatabase(db *mongo.Database) error {
 	// Create SuperAdmin user
 	superAdminID := primitive.NewObjectID()
 	now := time.Now()
-	
+
 	hashedPassword := encryptions.HashPassword("SuperAdmin@123") // Default password
-	
+
 	superAdmin := models.User{
 		ID:               superAdminID,
 		Username:         "superadmin",
@@ -53,6 +53,7 @@ func SeedDatabase(db *mongo.Database) error {
 		TimeStamp: models.TimeStamp{
 			CreatedAt: primitive.NewDateTimeFromTime(now),
 			UpdatedAt: primitive.NewDateTimeFromTime(now),
+			IsDeleted: false,
 		},
 	}
 
@@ -88,7 +89,7 @@ func SeedDatabase(db *mongo.Database) error {
 // seedDemoCompany creates a demo company for testing
 func seedDemoCompany(db *mongo.Database, superAdminID primitive.ObjectID, ctx context.Context) error {
 	companiesCollection := db.Collection("companies")
-	
+
 	// Check if demo company exists
 	var existingCompany models.Company
 	err := companiesCollection.FindOne(ctx, bson.M{"email": "demo@workzen.com"}).Decode(&existingCompany)
@@ -99,7 +100,7 @@ func seedDemoCompany(db *mongo.Database, superAdminID primitive.ObjectID, ctx co
 
 	now := time.Now()
 	demoCompanyID := primitive.NewObjectID()
-	
+
 	demoCompany := models.Company{
 		ID:         demoCompanyID,
 		Name:       "WorkZen Demo Company",
@@ -133,7 +134,7 @@ func seedDemoCompany(db *mongo.Database, superAdminID primitive.ObjectID, ctx co
 // seedDemoAdmin creates a demo admin user for the demo company
 func seedDemoAdmin(db *mongo.Database, companyID primitive.ObjectID, ctx context.Context) error {
 	usersCollection := db.Collection("users")
-	
+
 	// Check if demo admin exists
 	var existingAdmin models.User
 	err := usersCollection.FindOne(ctx, bson.M{"email": "admin@workzen.com"}).Decode(&existingAdmin)
@@ -165,6 +166,7 @@ func seedDemoAdmin(db *mongo.Database, companyID primitive.ObjectID, ctx context
 		TimeStamp: models.TimeStamp{
 			CreatedAt: primitive.NewDateTimeFromTime(now),
 			UpdatedAt: primitive.NewDateTimeFromTime(now),
+			IsDeleted: false,
 		},
 	}
 
@@ -196,7 +198,7 @@ func seedDemoAdmin(db *mongo.Database, companyID primitive.ObjectID, ctx context
 // seedDemoDepartments creates demo departments for the demo company
 func seedDemoDepartments(db *mongo.Database, ctx context.Context) error {
 	departmentsCollection := db.Collection("departments")
-	
+
 	// Check if departments exist
 	count, err := departmentsCollection.CountDocuments(ctx, bson.M{})
 	if err != nil {
