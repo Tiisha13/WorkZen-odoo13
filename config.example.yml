@@ -1,0 +1,39 @@
+version: 1.0.0
+
+server:
+  port: ":5000"
+  mode: "development" # "development" or "production"
+
+encryption:
+  jwt:
+    secret: "ZFdiXlhaaBuvLnPLlctMlne78VCW6MdhWFWKwTMVyO32bpMuJkUYUiaxWCme7E80q4RPUF5yyYsKCli3bJkc46qw4YZzoc1UfFBawTdL0ymxpo5mei2viQJwV1tH8S4TCbQhBefOpQMGUaK1jVHCQrCww79nkqUsO9D76QbeqqjgPSSaN94yie9WNQFrLPzo1lWb4SYdXtpiG6687EZD2bsX9xKudSLkMxQ1Fc3SvgFisfdApd9AEhMq7W6WJqvXUvkG4kNCBdKCRRDStSsmiJfUqNoo2f4tLBVn9MDiS6ti4ZHp2G2iHXuICVQRNbSJbmuowPcaMKnd35BnFGplb5Z8ODed7QqjVbBwTxmnyyoJETd8XmJIwcaTFwwvcENQG7dSoUGZgUe1F9SLAnwTUzp7RIkdrziFg5xQCuhXZ0Nu3l6XnrHhlUv7pOq0CxAsmqS6j3yagvcNbJyjbbj7m9cUzJAR8PofwQRJthVvKaxmDp73uOYsWb7Vb3PoDL0T"
+    expire: 30 # in days
+  aes:
+    key: "6JHiSklB0Xq4fdBjvMFx7rHdamEs8f3b"
+    ids:
+      key: "A7HrNsTWBpAr1AHLWJYOCDO4LyZkpx7i"
+    rounds: 16
+    iv: "3n5s7v9y/B?E(H+K" # 16 bytes IV for AES CBC mode
+
+  hash:
+    salt: "WorkZen"
+    secret: "WorkZen"
+    prefix: "WorkZen"
+
+  password:
+    rounds: 16
+    salt: "WorkZen"
+    secret: "WorkZen"
+    prefix: "WorkZen"
+
+databases:
+  mongodb:
+    uri: "mongodb://localhost:27017"
+    db: "WorkZen"
+
+  redis:
+    host: "localhost"
+    port: "6379"
+    password: ""
+    db: 0
+    prefix: "WorkZen:"
