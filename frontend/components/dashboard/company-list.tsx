@@ -36,7 +36,7 @@ interface CompaniesResponse {
   success: boolean;
   message: string;
   data: Company[];
-  pagination: {
+  meta: {
     page: number;
     limit: number;
     total: number;
@@ -82,8 +82,8 @@ export function CompanyList() {
 
       if (response.success && response.data) {
         setCompanies(response.data);
-        if (response.pagination) {
-          setPagination(response.pagination);
+        if (response.meta) {
+          setPagination(response.meta);
         }
       }
     } catch (error) {

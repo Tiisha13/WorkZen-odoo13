@@ -451,15 +451,37 @@ func (s *DashboardService) GetAdminDashboard(companyID primitive.ObjectID, userR
 	return stats, nil
 }
 
+// CompanyStats represents company-wise statistics for SuperAdmin
+type CompanyStats struct {
+	Name            string `json:"name"`
+	TotalEmployees  int64  `json:"count"`
+	ActiveEmployees int64  `json:"present"`
+	PresentToday    int64  `json:"absent"` // Reusing field names for chart compatibility
+	OnLeave         int64  `json:"on_leave"`
+}
+
 // SuperAdminDashboardStats for platform-level stats
 type SuperAdminDashboardStats struct {
-	TotalCompanies        int64   `json:"total_companies"`
-	ActiveCompanies       int64   `json:"active_companies"`
-	PendingApprovals      int64   `json:"pending_approvals"`
-	TotalEmployees        int64   `json:"total_employees"`
-	TotalPayrollProcessed int64   `json:"total_payroll_processed"`
-	TotalPayrunsGenerated int64   `json:"total_payruns_generated"`
-	PlatformRevenue       float64 `json:"platform_revenue"` // Could be calculated based on pricing model
+	TotalCompanies        int64               `json:"total_companies"`
+	ActiveCompanies       int64               `json:"active_companies"`
+	PendingApprovals      int64               `json:"pending_approvals"`
+	TotalEmployees        int64               `json:"total_employees"`
+	ActiveEmployees       int64               `json:"active_employees"`
+	InactiveEmployees     int64               `json:"inactive_employees"`
+	TotalPayrollProcessed int64               `json:"total_payroll_processed"`
+	TotalPayrunsGenerated int64               `json:"total_payruns_generated"`
+	PlatformRevenue       float64             `json:"platform_revenue"`
+	PresentToday          int64               `json:"present_today"`
+	AbsentToday           int64               `json:"absent_today"`
+	OnLeaveToday          int64               `json:"on_leave_today"`
+	PendingLeaves         int64               `json:"pending_leaves"`
+	ApprovedLeaves        int64               `json:"approved_leaves"`
+	RejectedLeaves        int64               `json:"rejected_leaves"`
+	TotalDepartments      int64               `json:"total_departments"`
+	AttendanceRate        float64             `json:"attendance_rate"`
+	DepartmentStats       []CompanyStats      `json:"department_stats"` // Company stats displayed as departments
+	MonthlyAttendance     []MonthlyAttendance `json:"monthly_attendance"`
+	LeaveTypeStats        []LeaveTypeStats    `json:"leave_type_stats"`
 }
 
 // GetSuperAdminDashboard retrieves platform-wide statistics
@@ -472,8 +494,13 @@ func (s *DashboardService) GetSuperAdminDashboard() (*SuperAdminDashboardStats, 
 	// Collections
 	companiesCollection := databases.MongoDBDatabase.Collection(collections.Companies)
 	usersCollection := databases.MongoDBDatabase.Collection(collections.Users)
+	attendanceCollection := databases.MongoDBDatabase.Collection(collections.Attendances)
+	leavesCollection := databases.MongoDBDatabase.Collection(collections.Leaves)
 	payrollCollection := databases.MongoDBDatabase.Collection(collections.Payrolls)
 	payrunsCollection := databases.MongoDBDatabase.Collection(collections.Payruns)
+	departmentsCollection := databases.MongoDBDatabase.Collection(collections.Departments)
+
+	today := time.Now().Format("2006-01-02")
 
 	// Total companies
 	total, err := companiesCollection.CountDocuments(ctx, bson.M{})
@@ -497,12 +524,94 @@ func (s *DashboardService) GetSuperAdminDashboard() (*SuperAdminDashboardStats, 
 		stats.PendingApprovals = pending
 	}
 
-	// Total employees across platform
+	// Total employees across platform (excluding SuperAdmins and Admins)
 	totalEmployees, err := usersCollection.CountDocuments(ctx, bson.M{
-		"role": bson.M{"$ne": models.RoleSuperAdmin},
+		"role": bson.M{"$nin": []models.Role{models.RoleSuperAdmin, models.RoleAdmin}},
 	})
 	if err == nil {
 		stats.TotalEmployees = totalEmployees
+	}
+
+	// Active employees
+	activeEmployees, err := usersCollection.CountDocuments(ctx, bson.M{
+		"role":      bson.M{"$nin": []models.Role{models.RoleSuperAdmin, models.RoleAdmin}},
+		"is_active": true,
+	})
+	if err == nil {
+		stats.ActiveEmployees = activeEmployees
+	}
+
+	// Inactive employees
+	inactiveEmployees, err := usersCollection.CountDocuments(ctx, bson.M{
+		"role":      bson.M{"$nin": []models.Role{models.RoleSuperAdmin, models.RoleAdmin}},
+		"is_active": false,
+	})
+	if err == nil {
+		stats.InactiveEmployees = inactiveEmployees
+	}
+
+	// Total departments
+	totalDepts, err := departmentsCollection.CountDocuments(ctx, bson.M{})
+	if err == nil {
+		stats.TotalDepartments = totalDepts
+	}
+
+	// Present today
+	presentToday, err := attendanceCollection.CountDocuments(ctx, bson.M{
+		"date":   today,
+		"status": models.StatusPresent,
+	})
+	if err == nil {
+		stats.PresentToday = presentToday
+	}
+
+	// Absent today
+	absentToday, err := attendanceCollection.CountDocuments(ctx, bson.M{
+		"date":   today,
+		"status": models.StatusAbsent,
+	})
+	if err == nil {
+		stats.AbsentToday = absentToday
+	}
+
+	// On leave today
+	onLeaveToday, err := leavesCollection.CountDocuments(ctx, bson.M{
+		"start_date": bson.M{"$lte": today},
+		"end_date":   bson.M{"$gte": today},
+		"status":     models.LeaveApproved,
+	})
+	if err == nil {
+		stats.OnLeaveToday = onLeaveToday
+	}
+
+	// Calculate attendance rate
+	totalAttendanceRecordsToday := stats.PresentToday + stats.AbsentToday + stats.OnLeaveToday
+	if totalAttendanceRecordsToday > 0 {
+		stats.AttendanceRate = (float64(stats.PresentToday) / float64(totalAttendanceRecordsToday)) * 100
+	}
+
+	// Pending leaves
+	pendingLeaves, err := leavesCollection.CountDocuments(ctx, bson.M{
+		"status": models.LeavePending,
+	})
+	if err == nil {
+		stats.PendingLeaves = pendingLeaves
+	}
+
+	// Approved leaves
+	approvedLeaves, err := leavesCollection.CountDocuments(ctx, bson.M{
+		"status": models.LeaveApproved,
+	})
+	if err == nil {
+		stats.ApprovedLeaves = approvedLeaves
+	}
+
+	// Rejected leaves
+	rejectedLeaves, err := leavesCollection.CountDocuments(ctx, bson.M{
+		"status": models.LeaveRejected,
+	})
+	if err == nil {
+		stats.RejectedLeaves = rejectedLeaves
 	}
 
 	// Total payroll processed
@@ -520,6 +629,204 @@ func (s *DashboardService) GetSuperAdminDashboard() (*SuperAdminDashboardStats, 
 	// Platform revenue calculation (example: could be based on per-employee fees)
 	// For now, just set to 0 - implement based on business model
 	stats.PlatformRevenue = 0.0
+
+	// Company-wise statistics (top companies by employee count)
+	companyStatsPipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"is_approved": true,
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         collections.Users,
+				"localField":   "_id",
+				"foreignField": "company",
+				"as":           "employees",
+			},
+		},
+		{
+			"$addFields": bson.M{
+				"total_employees": bson.M{
+					"$size": bson.M{
+						"$filter": bson.M{
+							"input": "$employees",
+							"as":    "emp",
+							"cond": bson.M{
+								"$not": bson.M{
+									"$in": []interface{}{
+										"$$emp.role",
+										[]models.Role{models.RoleSuperAdmin, models.RoleAdmin},
+									},
+								},
+							},
+						},
+					},
+				},
+				"active_employees": bson.M{
+					"$size": bson.M{
+						"$filter": bson.M{
+							"input": "$employees",
+							"as":    "emp",
+							"cond": bson.M{
+								"$and": []bson.M{
+									{
+										"$eq": []interface{}{"$$emp.is_active", true},
+									},
+									{
+										"$not": bson.M{
+											"$in": []interface{}{
+												"$$emp.role",
+												[]models.Role{models.RoleSuperAdmin, models.RoleAdmin},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"$sort": bson.M{"total_employees": -1},
+		},
+		{
+			"$limit": 10,
+		},
+		{
+			"$project": bson.M{
+				"name":             1,
+				"total_employees":  1,
+				"active_employees": 1,
+			},
+		},
+	}
+
+	companyCursor, err := companiesCollection.Aggregate(ctx, companyStatsPipeline)
+	if err == nil {
+		defer companyCursor.Close(ctx)
+		for companyCursor.Next(ctx) {
+			var result struct {
+				Name            string `bson:"name"`
+				TotalEmployees  int64  `bson:"total_employees"`
+				ActiveEmployees int64  `bson:"active_employees"`
+			}
+			if err := companyCursor.Decode(&result); err == nil {
+				stats.DepartmentStats = append(stats.DepartmentStats, CompanyStats{
+					Name:            result.Name,
+					TotalEmployees:  result.TotalEmployees,
+					ActiveEmployees: result.ActiveEmployees,
+					PresentToday:    0, // Will be calculated below
+					OnLeave:         0, // Will be calculated below
+				})
+			}
+		}
+	}
+
+	// Get attendance for today for each company
+	for i := range stats.DepartmentStats {
+		companyName := stats.DepartmentStats[i].Name
+
+		// Find company ID by name
+		var company models.Company
+		err := companiesCollection.FindOne(ctx, bson.M{"name": companyName}).Decode(&company)
+		if err == nil {
+			// Present today for this company
+			presentCount, err := attendanceCollection.CountDocuments(ctx, bson.M{
+				"company": company.ID,
+				"date":    today,
+				"status":  models.StatusPresent,
+			})
+			if err == nil {
+				stats.DepartmentStats[i].PresentToday = presentCount
+			}
+
+			// On leave today for this company
+			onLeaveCount, err := leavesCollection.CountDocuments(ctx, bson.M{
+				"company":    company.ID,
+				"start_date": bson.M{"$lte": today},
+				"end_date":   bson.M{"$gte": today},
+				"status":     models.LeaveApproved,
+			})
+			if err == nil {
+				stats.DepartmentStats[i].OnLeave = onLeaveCount
+			}
+		}
+	}
+
+	// Monthly attendance trends (last 6 months)
+	now := time.Now()
+	for i := 5; i >= 0; i-- {
+		monthStart := time.Date(now.Year(), now.Month()-time.Month(i), 1, 0, 0, 0, 0, time.UTC)
+		monthEnd := monthStart.AddDate(0, 1, -1)
+
+		monthStartStr := monthStart.Format("2006-01-02")
+		monthEndStr := monthEnd.Format("2006-01-02")
+
+		// Present count for the month
+		presentCount, _ := attendanceCollection.CountDocuments(ctx, bson.M{
+			"date": bson.M{
+				"$gte": monthStartStr,
+				"$lte": monthEndStr,
+			},
+			"status": models.StatusPresent,
+		})
+
+		// Absent count for the month
+		absentCount, _ := attendanceCollection.CountDocuments(ctx, bson.M{
+			"date": bson.M{
+				"$gte": monthStartStr,
+				"$lte": monthEndStr,
+			},
+			"status": models.StatusAbsent,
+		})
+
+		// On leave count for the month
+		onLeaveCount, _ := leavesCollection.CountDocuments(ctx, bson.M{
+			"start_date": bson.M{"$lte": monthEndStr},
+			"end_date":   bson.M{"$gte": monthStartStr},
+			"status":     models.LeaveApproved,
+		})
+
+		stats.MonthlyAttendance = append(stats.MonthlyAttendance, MonthlyAttendance{
+			Month:   monthStart.Format("Jan 2006"),
+			Present: presentCount,
+			Absent:  absentCount,
+			OnLeave: onLeaveCount,
+		})
+	}
+
+	// Leave type statistics
+	leaveTypes := []models.LeaveType{
+		models.LeaveSick,
+		models.LeaveCasual,
+		models.LeaveVacation,
+	}
+
+	for _, leaveType := range leaveTypes {
+		pending, _ := leavesCollection.CountDocuments(ctx, bson.M{
+			"leave_type": leaveType,
+			"status":     models.LeavePending,
+		})
+
+		approved, _ := leavesCollection.CountDocuments(ctx, bson.M{
+			"leave_type": leaveType,
+			"status":     models.LeaveApproved,
+		})
+
+		rejected, _ := leavesCollection.CountDocuments(ctx, bson.M{
+			"leave_type": leaveType,
+			"status":     models.LeaveRejected,
+		})
+
+		stats.LeaveTypeStats = append(stats.LeaveTypeStats, LeaveTypeStats{
+			Type:     string(leaveType),
+			Pending:  pending,
+			Approved: approved,
+			Rejected: rejected,
+		})
+	}
 
 	return stats, nil
 }

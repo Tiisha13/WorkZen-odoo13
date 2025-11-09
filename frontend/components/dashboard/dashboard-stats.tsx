@@ -44,11 +44,13 @@ const COLORS = {
 export function DashboardStats() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const user = apiService.getUser();
+        setUserRole(user?.role || "");
 
         // Select endpoint based on role
         let endpoint = API_ENDPOINTS.DASHBOARD; // Default for all users
@@ -74,7 +76,68 @@ export function DashboardStats() {
     fetchData();
   }, []);
 
-  const stats = [
+  // SuperAdmin-specific stats
+  const superAdminStats = [
+    {
+      title: "Total Companies",
+      value: data?.total_companies || 0,
+      icon: IconBuilding,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100 dark:bg-blue-900/20",
+    },
+    {
+      title: "Active Companies",
+      value: data?.active_companies || 0,
+      icon: IconUserCheck,
+      color: "text-green-600",
+      bgColor: "bg-green-100 dark:bg-green-900/20",
+    },
+    {
+      title: "Pending Approvals",
+      value: data?.pending_approvals || 0,
+      icon: IconClock,
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-100 dark:bg-yellow-900/20",
+    },
+    {
+      title: "Total Employees",
+      value: data?.total_employees || 0,
+      icon: IconUsers,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100 dark:bg-purple-900/20",
+    },
+    {
+      title: "Present Today",
+      value: data?.present_today || 0,
+      icon: IconUserCheck,
+      color: "text-cyan-600",
+      bgColor: "bg-cyan-100 dark:bg-cyan-900/20",
+    },
+    {
+      title: "Attendance Rate",
+      value: `${data?.attendance_rate?.toFixed(1) || 0}%`,
+      icon: IconPercentage,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-100 dark:bg-emerald-900/20",
+    },
+    {
+      title: "Total Departments",
+      value: data?.total_departments || 0,
+      icon: IconBuilding,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-100 dark:bg-indigo-900/20",
+    },
+    {
+      title: "Pending Leaves",
+      value: data?.pending_leaves || 0,
+      icon: IconCalendar,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100 dark:bg-orange-900/20",
+    },
+  ];
+
+  // Company-level stats (for other roles)
+  const companyStats = [
     {
       title: "Total Employees",
       value: data?.total_employees || 0,
@@ -132,6 +195,8 @@ export function DashboardStats() {
       bgColor: "bg-emerald-100 dark:bg-emerald-900/20",
     },
   ];
+
+  const stats = userRole === "superadmin" ? superAdminStats : companyStats;
 
   if (loading) {
     return (
@@ -228,11 +293,15 @@ export function DashboardStats() {
 
       {/* Charts Section */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {/* Department-wise Statistics */}
+        {/* Department-wise Statistics / Company-wise for SuperAdmin */}
         {departmentChartData.length > 0 && (
           <Card className="col-span-1 md:col-span-2 lg:col-span-3">
             <CardHeader>
-              <CardTitle>Department-wise Attendance</CardTitle>
+              <CardTitle>
+                {userRole === "superadmin"
+                  ? "Top Companies by Employee Count"
+                  : "Department-wise Attendance"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>
@@ -255,7 +324,11 @@ export function DashboardStats() {
         {monthlyChartData.length > 0 && (
           <Card className="col-span-1 md:col-span-2 lg:col-span-3">
             <CardHeader>
-              <CardTitle>Monthly Attendance Trend (Last 6 Months)</CardTitle>
+              <CardTitle>
+                {userRole === "superadmin"
+                  ? "Platform-wide Attendance Trend (Last 6 Months)"
+                  : "Monthly Attendance Trend (Last 6 Months)"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>

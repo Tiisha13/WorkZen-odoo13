@@ -8,18 +8,23 @@ export default function DashboardPage() {
   usePageTitle("Dashboard | WorkZen");
   const { user } = useRequireAuth();
 
-  // SuperAdmin sees only company list
+  // SuperAdmin sees platform-wide stats and company list
   if (user?.role === "superadmin") {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Companies Management</h1>
+          <h1 className="text-3xl font-bold">Platform Dashboard</h1>
           <p className="text-muted-foreground">
-            View and manage all companies on the platform
+            Platform-wide statistics and company management
           </p>
         </div>
 
-        <CompanyList />
+        <DashboardStats />
+
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Companies Management</h2>
+          <CompanyList />
+        </div>
       </div>
     );
   }
