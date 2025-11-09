@@ -426,73 +426,75 @@ export default function DocumentsPage() {
         </div>
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>File Name</TableHead>
-              <TableHead>File Size</TableHead>
-              <TableHead>Uploaded Date</TableHead>
-              <TableHead>Privacy</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
-                  Loading...
-                </TableCell>
+                <TableHead>Title</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>File Name</TableHead>
+                <TableHead>File Size</TableHead>
+                <TableHead>Uploaded Date</TableHead>
+                <TableHead>Privacy</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : filteredDocuments.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No documents found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredDocuments.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell className="font-medium">
-                    {doc.description || doc.file_name}
-                  </TableCell>
-                  <TableCell>{getCategoryBadge(doc.category)}</TableCell>
-                  <TableCell>{doc.file_name}</TableCell>
-                  <TableCell>{formatFileSize(doc.size)}</TableCell>
-                  <TableCell>
-                    {doc.created_at ? formatDate(doc.created_at) : "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={doc.is_private ? "secondary" : "outline"}>
-                      {doc.is_private ? "Private" : "Public"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleView(doc)}
-                    >
-                      <IconEye className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDownload(doc)}
-                    >
-                      <IconDownload className="w-4 h-4" />
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    Loading...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : filteredDocuments.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No documents found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredDocuments.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell className="font-medium">
+                      {doc.description || doc.file_name}
+                    </TableCell>
+                    <TableCell>{getCategoryBadge(doc.category)}</TableCell>
+                    <TableCell>{doc.file_name}</TableCell>
+                    <TableCell>{formatFileSize(doc.size)}</TableCell>
+                    <TableCell>
+                      {doc.created_at ? formatDate(doc.created_at) : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={doc.is_private ? "secondary" : "outline"}>
+                        {doc.is_private ? "Private" : "Public"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleView(doc)}
+                      >
+                        <IconEye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDownload(doc)}
+                      >
+                        <IconDownload className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

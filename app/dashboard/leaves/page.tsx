@@ -313,97 +313,99 @@ export default function LeavesPage() {
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-lg border shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>End Date</TableHead>
-              <TableHead>Days</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Status</TableHead>
-              {canApprove && (
-                <TableHead className="text-right">Actions</TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={canApprove ? 8 : 7}
-                  className="h-32 text-center"
-                >
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                </TableCell>
+                <TableHead>Employee</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Start Date</TableHead>
+                <TableHead>End Date</TableHead>
+                <TableHead>Days</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>Status</TableHead>
+                {canApprove && (
+                  <TableHead className="text-right">Actions</TableHead>
+                )}
               </TableRow>
-            ) : leaves.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={canApprove ? 8 : 7}
-                  className="h-32 text-center"
-                >
-                  <div className="flex flex-col items-center justify-center text-muted-foreground">
-                    <p className="text-sm">No leave requests found</p>
-                    <p className="text-xs mt-1">
-                      Submit a new leave request to get started
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              leaves.map((leave) => (
-                <TableRow key={leave.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    {leave.user?.first_name} {leave.user?.last_name}
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={canApprove ? 8 : 7}
+                    className="h-32 text-center"
+                  >
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
                   </TableCell>
-                  <TableCell>{getTypeBadge(leave.leave_type)}</TableCell>
-                  <TableCell className="text-sm">
-                    {formatDate(leave.start_date)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {formatDate(leave.end_date)}
-                  </TableCell>
-                  <TableCell className="text-sm">{leave.days || 0}</TableCell>
-                  <TableCell className="max-w-xs truncate text-sm">
-                    {leave.reason}
-                  </TableCell>
-                  <TableCell>{getStatusBadge(leave.status)}</TableCell>
-                  {canApprove && (
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {leave.status === "pending" && (
-                          <>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleApprove(leave.id)}
-                              className="h-8 w-8 text-green-600 hover:text-green-700"
-                            >
-                              <IconCheck className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleReject(leave.id)}
-                              className="h-8 w-8 text-red-600 hover:text-red-700"
-                            >
-                              <IconX className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : leaves.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={canApprove ? 8 : 7}
+                    className="h-32 text-center"
+                  >
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <p className="text-sm">No leave requests found</p>
+                      <p className="text-xs mt-1">
+                        Submit a new leave request to get started
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                leaves.map((leave) => (
+                  <TableRow key={leave.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">
+                      {leave.user?.first_name} {leave.user?.last_name}
+                    </TableCell>
+                    <TableCell>{getTypeBadge(leave.leave_type)}</TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(leave.start_date)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(leave.end_date)}
+                    </TableCell>
+                    <TableCell className="text-sm">{leave.days || 0}</TableCell>
+                    <TableCell className="max-w-xs truncate text-sm">
+                      {leave.reason}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(leave.status)}</TableCell>
+                    {canApprove && (
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {leave.status === "pending" && (
+                            <>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleApprove(leave.id)}
+                                className="h-8 w-8 text-green-600 hover:text-green-700"
+                              >
+                                <IconCheck className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleReject(leave.id)}
+                                className="h-8 w-8 text-red-600 hover:text-red-700"
+                              >
+                                <IconX className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

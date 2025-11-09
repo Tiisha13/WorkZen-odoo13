@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import { IconCheck, IconX, IconLoader2, IconMail } from "@tabler/icons-react";
 import { apiService } from "@/lib/api-service";
 import { toast } from "sonner";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [verifying, setVerifying] = useState(true);
@@ -219,5 +219,25 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10">
+          <div className="w-full max-w-md">
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <IconLoader2 className="h-8 w-8 animate-spin text-primary" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

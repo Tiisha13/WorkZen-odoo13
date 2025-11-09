@@ -174,70 +174,74 @@ export default function PayrollPage() {
         />
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead>Employee ID</TableHead>
-              <TableHead>Basic Salary</TableHead>
-              <TableHead>Allowances</TableHead>
-              <TableHead>Deductions</TableHead>
-              <TableHead>Net Salary</TableHead>
-              <TableHead>Month</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
-                  Loading...
-                </TableCell>
+                <TableHead>Employee</TableHead>
+                <TableHead>Employee ID</TableHead>
+                <TableHead>Basic Salary</TableHead>
+                <TableHead>Allowances</TableHead>
+                <TableHead>Deductions</TableHead>
+                <TableHead>Net Salary</TableHead>
+                <TableHead>Month</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : payrolls.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No payroll records found for selected month
-                </TableCell>
-              </TableRow>
-            ) : (
-              payrolls.map((payroll) => (
-                <TableRow key={payroll.id}>
-                  <TableCell className="font-medium">
-                    {payroll.user?.first_name} {payroll.user?.last_name}
-                  </TableCell>
-                  <TableCell>{payroll.user_id}</TableCell>
-                  <TableCell>{formatCurrency(payroll.basic_salary)}</TableCell>
-                  <TableCell>
-                    {formatCurrency(payroll.allowances || 0)}
-                  </TableCell>
-                  <TableCell>
-                    {formatCurrency(payroll.deductions || 0)}
-                  </TableCell>
-                  <TableCell className="font-semibold">
-                    {formatCurrency(payroll.net_salary)}
-                  </TableCell>
-                  <TableCell>{formatDate(payroll.month)}</TableCell>
-                  <TableCell>{getStatusBadge(payroll.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDownloadPayslip(payroll.id)}
-                    >
-                      <IconDownload className="w-4 h-4" />
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8">
+                    Loading...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : payrolls.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={9}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    No payroll records found for selected month
+                  </TableCell>
+                </TableRow>
+              ) : (
+                payrolls.map((payroll) => (
+                  <TableRow key={payroll.id}>
+                    <TableCell className="font-medium">
+                      {payroll.user?.first_name} {payroll.user?.last_name}
+                    </TableCell>
+                    <TableCell>{payroll.user_id}</TableCell>
+                    <TableCell>
+                      {formatCurrency(payroll.basic_salary)}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(payroll.allowances || 0)}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(payroll.deductions || 0)}
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      {formatCurrency(payroll.net_salary)}
+                    </TableCell>
+                    <TableCell>{formatDate(payroll.month)}</TableCell>
+                    <TableCell>{getStatusBadge(payroll.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDownloadPayslip(payroll.id)}
+                      >
+                        <IconDownload className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

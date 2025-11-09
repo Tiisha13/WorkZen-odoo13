@@ -394,95 +394,100 @@ export default function UsersPage() {
       </AlertDialog>
 
       {/* Users Table Card */}
-      <div className="bg-card rounded-lg border shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Designation</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                </TableCell>
+                <TableHead>User</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Designation</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : filteredUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
-                  <div className="flex flex-col items-center justify-center text-muted-foreground">
-                    <p className="text-sm">No users found</p>
-                    {searchTerm && (
-                      <p className="text-xs mt-1">Try adjusting your search</p>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredUsers.map((user) => (
-                <TableRow key={user.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        {user.first_name} {user.last_name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        @{user.username}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{user.email}</TableCell>
-                  <TableCell>{getRoleBadge(user.role)}</TableCell>
-                  <TableCell className="text-sm">
-                    {user.designation || (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {user.role !== "superadmin" && user.role !== "admin" && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => openSalaryDialog(user)}
-                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          title="Manage Salary"
-                        >
-                          <IconCurrencyDollar className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleEdit(user)}
-                        className="h-8 w-8"
-                      >
-                        <IconEdit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setDeleteUser(user)}
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                      >
-                        <IconTrash className="w-4 h-4" />
-                      </Button>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <p className="text-sm">No users found</p>
+                      {searchTerm && (
+                        <p className="text-xs mt-1">
+                          Try adjusting your search
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-muted/50">
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {user.first_name} {user.last_name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          @{user.username}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{user.email}</TableCell>
+                    <TableCell>{getRoleBadge(user.role)}</TableCell>
+                    <TableCell className="text-sm">
+                      {user.designation || (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(user.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {user.role !== "superadmin" &&
+                          user.role !== "admin" && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => openSalaryDialog(user)}
+                              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              title="Manage Salary"
+                            >
+                              <IconCurrencyDollar className="w-4 h-4" />
+                            </Button>
+                          )}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleEdit(user)}
+                          className="h-8 w-8"
+                        >
+                          <IconEdit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setDeleteUser(user)}
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                        >
+                          <IconTrash className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* User Form Dialog */}
