@@ -114,8 +114,10 @@ func RegisterRoutes(app *fiber.App) {
 	// ==================== DOCUMENT ROUTES ====================
 	documents := api.Group("/documents")
 	documents.Use(middlewares.AuthMiddleware())
-	documents.Post("/upload", documentController.UploadDocument)
-	documents.Get("/", documentController.ListDocuments) // All users can list (filtered by role in controller)
+	documents.Post("/", documentController.UploadDocument)              // Upload document
+	documents.Get("/", documentController.ListDocuments)                // All users can list (filtered by role in controller)
+	documents.Get("/:id/view", documentController.ViewDocument)         // View document (images, videos, PDFs)
+	documents.Get("/:id/download", documentController.DownloadDocument) // Download document
 	documents.Delete("/:id", middlewares.RequireCompanyAdmin(), documentController.DeleteDocument)
 
 	// ==================== DASHBOARD ROUTES ====================

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"api.workzen.odoo/config"
 	"api.workzen.odoo/constants"
@@ -23,6 +24,14 @@ func init() {
 	}
 
 	Box := box.New(boxConfig)
+
+	// Create assets/uploads directory if it doesn't exist
+	uploadsDir := "./assets/uploads"
+	if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
+		log.Printf("⚠️  Warning: Failed to create uploads directory: %v\n", err)
+	} else {
+		log.Printf("✅ Uploads directory ready: %s\n", uploadsDir)
+	}
 
 	if _, err := databases.InitDB(); err != nil {
 		Box.Print("WorkZen - Backend Server", "Database Connection Failed!")
