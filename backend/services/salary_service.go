@@ -25,6 +25,7 @@ type CreateSalaryStructureRequest struct {
 	EmployeeID    string  `json:"employee_id" validate:"required"`
 	MonthlyWage   float64 `json:"monthly_wage" validate:"required"`
 	EffectiveFrom string  `json:"effective_from"` // YYYY-MM-DD
+	Currency      string  `json:"currency"`       // USD, EUR, INR, etc.
 }
 
 // CreateSalaryStructure creates a new salary structure for an employee
@@ -57,11 +58,11 @@ func (s *SalaryService) CreateSalaryStructure(req *CreateSalaryStructureRequest,
 	if err != nil {
 		// Use default configuration if not found
 		config = models.PayrollConfiguration{
-			DefaultBasicPercent:      50.0,
-			DefaultHRAPercent:        50.0,
-			DefaultStandardAllowance: 16.67,
-			DefaultPerformanceBonus:  8.33,
-			DefaultLTA:               8.33,
+			DefaultBasicPercent:      40.0, // 40% of monthly wage
+			DefaultHRAPercent:        40.0, // 40% of Basic (16% of monthly wage)
+			DefaultStandardAllowance: 15.0, // 15% of monthly wage
+			DefaultPerformanceBonus:  10.0, // 10% of monthly wage
+			DefaultLTA:               10.0, // 10% of monthly wage
 			PFEmployeePercent:        12.0,
 			PFEmployerPercent:        12.0,
 			ProfessionalTax:          200.0,
@@ -78,7 +79,10 @@ func (s *SalaryService) CreateSalaryStructure(req *CreateSalaryStructureRequest,
 	structure.ID = primitive.NewObjectID()
 	structure.EmployeeID = employeeID
 	structure.Company = companyID
-	structure.Currency = "INR"
+	structure.Currency = req.Currency
+	if structure.Currency == "" {
+		structure.Currency = "USD" // Default to USD if not specified
+	}
 	structure.IsActive = true
 
 	if req.EffectiveFrom != "" {
