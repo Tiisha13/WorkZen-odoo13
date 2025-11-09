@@ -130,8 +130,14 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/profile"}>
-                  <Link href="/profile" className="flex items-center gap-2">
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/dashboard/profile"}
+                >
+                  <Link
+                    href="/dashboard/profile"
+                    className="flex items-center gap-2"
+                  >
                     <IconSettings className="h-4 w-4" />
                     <span>Profile</span>
                   </Link>
