@@ -150,9 +150,9 @@ func CanModifySalaryInfo() fiber.Handler {
 			return constants.HTTPErrors.Unauthorized(c, "Authentication required")
 		}
 
-		// Only Admin and Payroll can modify salary info
-		if !user.IsSuperAdmin && user.Role != models.RoleAdmin && user.Role != models.RolePayroll {
-			return constants.HTTPErrors.Forbidden(c, "Only Admin or Payroll Officer can modify salary information")
+		// Only Admin, HR, and Payroll can modify salary info
+		if !user.IsSuperAdmin && user.Role != models.RoleAdmin && user.Role != models.RoleHR && user.Role != models.RolePayroll {
+			return constants.HTTPErrors.Forbidden(c, "Only Admin, HR, or Payroll Officer can modify salary information")
 		}
 
 		return c.Next()
