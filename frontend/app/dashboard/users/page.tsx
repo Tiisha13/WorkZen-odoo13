@@ -97,6 +97,7 @@ export default function UsersPage() {
   const [salaryUser, setSalaryUser] = useState<User | null>(null);
   const [monthlyWage, setMonthlyWage] = useState("");
   const [effectiveFrom, setEffectiveFrom] = useState("");
+  const [currency, setCurrency] = useState("USD");
 
   // Individual form states
   const [email, setEmail] = useState("");
@@ -241,12 +242,14 @@ export default function UsersPage() {
         employee_id: salaryUser.id,
         monthly_wage: parseFloat(monthlyWage),
         effective_from: effectiveFrom || new Date().toISOString().split("T")[0],
+        currency: currency,
       });
       toast.success("Salary structure created successfully");
       setIsSalaryDialogOpen(false);
       setSalaryUser(null);
       setMonthlyWage("");
       setEffectiveFrom("");
+      setCurrency("USD");
     } catch (error) {
       const message =
         error instanceof Error
@@ -267,6 +270,7 @@ export default function UsersPage() {
     setSalaryUser(user);
     setMonthlyWage("");
     setEffectiveFrom(new Date().toISOString().split("T")[0]);
+    setCurrency("USD");
     setIsSalaryDialogOpen(true);
   };
 
@@ -745,8 +749,36 @@ export default function UsersPage() {
           </DialogHeader>
           <form onSubmit={handleSalarySubmit} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="currency">
+                Currency <span className="text-destructive">*</span>
+              </Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger id="currency">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD ($) - US Dollar</SelectItem>
+                  <SelectItem value="EUR">EUR (€) - Euro</SelectItem>
+                  <SelectItem value="GBP">GBP (£) - British Pound</SelectItem>
+                  <SelectItem value="INR">INR (₹) - Indian Rupee</SelectItem>
+                  <SelectItem value="JPY">JPY (¥) - Japanese Yen</SelectItem>
+                  <SelectItem value="CNY">CNY (¥) - Chinese Yuan</SelectItem>
+                  <SelectItem value="AUD">
+                    AUD ($) - Australian Dollar
+                  </SelectItem>
+                  <SelectItem value="CAD">CAD ($) - Canadian Dollar</SelectItem>
+                  <SelectItem value="CHF">CHF (Fr) - Swiss Franc</SelectItem>
+                  <SelectItem value="SGD">
+                    SGD ($) - Singapore Dollar
+                  </SelectItem>
+                  <SelectItem value="AED">AED (د.إ) - UAE Dirham</SelectItem>
+                  <SelectItem value="SAR">SAR (﷼) - Saudi Riyal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="monthly_wage">
-                Monthly Wage ($) <span className="text-destructive">*</span>
+                Monthly Wage <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="monthly_wage"
@@ -759,7 +791,7 @@ export default function UsersPage() {
                 required
               />
               <p className="text-sm text-muted-foreground">
-                Yearly: $
+                Yearly: {currency}{" "}
                 {monthlyWage
                   ? (parseFloat(monthlyWage) * 12).toFixed(2)
                   : "0.00"}

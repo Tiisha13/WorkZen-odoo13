@@ -45,7 +45,7 @@ export function NavUser({
   };
 
   const handleProfile = () => {
-    router.push("/profile");
+    router.push("/dashboard/profile");
   };
 
   return (
