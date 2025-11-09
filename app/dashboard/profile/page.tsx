@@ -135,9 +135,10 @@ export default function ProfilePage() {
   };
 
   const formatCurrency = (amount: number) => {
+    const currencyCode = salary?.currency || "USD";
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: currencyCode,
     }).format(amount);
   };
 
