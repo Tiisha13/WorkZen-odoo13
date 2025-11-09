@@ -24,7 +24,12 @@ func (dc *DashboardController) GetDashboard(c *fiber.Ctx) error {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
 	}
 
-	stats, err := dc.service.GetAdminDashboard(companyID)
+	user, err := middlewares.GetAuthUser(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	stats, err := dc.service.GetAdminDashboard(companyID, user.Role)
 	if err != nil {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
@@ -39,7 +44,12 @@ func (dc *DashboardController) GetAdminDashboard(c *fiber.Ctx) error {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
 	}
 
-	stats, err := dc.service.GetAdminDashboard(companyID)
+	user, err := middlewares.GetAuthUser(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	stats, err := dc.service.GetAdminDashboard(companyID, user.Role)
 	if err != nil {
 		return constants.HTTPErrors.InternalServerError(c, err.Error())
 	}
