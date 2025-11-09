@@ -182,4 +182,11 @@ export interface DashboardData {
   department_stats: DepartmentStats[];
   monthly_attendance: MonthlyAttendance[];
   leave_type_stats: LeaveTypeStats[];
+  // SuperAdmin-specific fields
+  total_companies?: number;
+  active_companies?: number;
+  pending_approvals?: number;
+  total_payroll_processed?: number;
+  total_payruns_generated?: number;
+  platform_revenue?: number;
 }
