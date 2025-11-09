@@ -21,10 +21,23 @@ func NewUserController() *UserController {
 	}
 }
 
+// CreateUserRequestAPI represents the request structure for creating a user via API with encrypted IDs
+type CreateUserRequestAPI struct {
+	FirstName    string `json:"first_name" validate:"required"`
+	LastName     string `json:"last_name" validate:"required"`
+	Email        string `json:"email" validate:"required,email"`
+	Phone        string `json:"phone"`
+	Role         string `json:"role" validate:"required"`
+	Designation  string `json:"designation"`
+	DepartmentID string `json:"department_id"`
+	ManagerID    string `json:"manager_id"`
+	DateOfJoin   string `json:"date_of_join"`
+}
+
 // CreateUser creates a new employee
 func (uc *UserController) CreateUser(c *fiber.Ctx) error {
-	var req services.CreateUserRequest
-	if err := c.BodyParser(&req); err != nil {
+	var reqAPI CreateUserRequestAPI
+	if err := c.BodyParser(&reqAPI); err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid request body")
 	}
 
@@ -36,6 +49,35 @@ func (uc *UserController) CreateUser(c *fiber.Ctx) error {
 	authUserID, err := middlewares.GetAuthUserID(c)
 	if err != nil {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	// Convert API request to service request
+	req := services.CreateUserRequest{
+		FirstName:   reqAPI.FirstName,
+		LastName:    reqAPI.LastName,
+		Email:       reqAPI.Email,
+		Phone:       reqAPI.Phone,
+		Role:        models.Role(reqAPI.Role),
+		Designation: reqAPI.Designation,
+		DateOfJoin:  reqAPI.DateOfJoin,
+	}
+
+	// Decrypt department_id if provided
+	if reqAPI.DepartmentID != "" {
+		deptID, err := helpers.DecryptObjectID(reqAPI.DepartmentID)
+		if err != nil {
+			return constants.HTTPErrors.BadRequest(c, "Invalid department_id")
+		}
+		req.DepartmentID = &deptID
+	}
+
+	// Decrypt manager_id if provided
+	if reqAPI.ManagerID != "" {
+		mgrID, err := helpers.DecryptObjectID(reqAPI.ManagerID)
+		if err != nil {
+			return constants.HTTPErrors.BadRequest(c, "Invalid manager_id")
+		}
+		req.ManagerID = &mgrID
 	}
 
 	user, password, err := uc.service.CreateUser(&req, companyID, authUserID)
@@ -97,6 +139,18 @@ func (uc *UserController) GetUserByID(c *fiber.Ctx) error {
 	return constants.HTTPSuccess.OK(c, "User retrieved successfully", user)
 }
 
+// UpdateUserRequestAPI for API with encrypted IDs
+type UpdateUserRequestAPI struct {
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	Email        string `json:"email"`
+	Phone        string `json:"phone"`
+	Role         string `json:"role"`
+	Designation  string `json:"designation"`
+	DepartmentID string `json:"department_id"`
+	Password     string `json:"password"`
+}
+
 // UpdateUser updates user details
 func (uc *UserController) UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -105,14 +159,34 @@ func (uc *UserController) UpdateUser(c *fiber.Ctx) error {
 		return constants.HTTPErrors.BadRequest(c, "Invalid user ID")
 	}
 
-	var req services.UpdateUserRequest
-	if err := c.BodyParser(&req); err != nil {
+	var reqAPI UpdateUserRequestAPI
+	if err := c.BodyParser(&reqAPI); err != nil {
 		return constants.HTTPErrors.BadRequest(c, "Invalid request body")
 	}
 
 	authUserID, err := middlewares.GetAuthUserID(c)
 	if err != nil {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	// Convert API request to service request
+	req := services.UpdateUserRequest{
+		FirstName:   reqAPI.FirstName,
+		LastName:    reqAPI.LastName,
+		Email:       reqAPI.Email,
+		Phone:       reqAPI.Phone,
+		Role:        models.Role(reqAPI.Role),
+		Designation: reqAPI.Designation,
+		Password:    reqAPI.Password,
+	}
+
+	// Decrypt department_id if provided
+	if reqAPI.DepartmentID != "" {
+		deptID, err := helpers.DecryptObjectID(reqAPI.DepartmentID)
+		if err != nil {
+			return constants.HTTPErrors.BadRequest(c, "Invalid department_id")
+		}
+		req.DepartmentID = &deptID
 	}
 
 	user, err := uc.service.UpdateUser(userID, authUserID, &req)

@@ -22,15 +22,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -57,29 +48,8 @@ import {
   IconCurrencyDollar,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { useMediaQuery, usePageTitle, useRequireAuth } from "@/lib/hooks";
+import { usePageTitle, useRequireAuth } from "@/lib/hooks";
 import type { User, Department } from "@/lib/types";
-
-interface UserFormFieldsProps {
-  email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  role: string;
-  designation: string;
-  phone: string;
-  departmentId: string;
-  departments: Department[];
-
-  setEmail: React.Dispatch<React.SetStateAction<string>>;
-  setFirstName: React.Dispatch<React.SetStateAction<string>>;
-  setLastName: React.Dispatch<React.SetStateAction<string>>;
-  setPassword: React.Dispatch<React.SetStateAction<string>>;
-  setRole: React.Dispatch<React.SetStateAction<string>>;
-  setDesignation: React.Dispatch<React.SetStateAction<string>>;
-  setPhone: React.Dispatch<React.SetStateAction<string>>;
-  setDepartmentId: React.Dispatch<React.SetStateAction<string>>;
-}
 
 export default function UsersPage() {
   usePageTitle("User Management | WorkZen");
@@ -111,7 +81,6 @@ export default function UsersPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
 
   const currentUser = apiService.getUser();
-  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     fetchUsers();
@@ -159,21 +128,35 @@ export default function UsersPage() {
       return;
     }
 
-    if (!editingUser && !password) {
-      toast.error("Password is required for new users");
+    if (editingUser && password && !password.trim()) {
+      toast.error("Password cannot be empty when updating");
       return;
     }
 
-    const userData = {
+    // For creating new users, backend auto-generates password
+    const userData: {
+      email: string;
+      first_name: string;
+      last_name: string;
+      role: string;
+      designation: string;
+      phone: string;
+      department_id: string | undefined;
+      password?: string;
+    } = {
       email,
       first_name: firstName,
       last_name: lastName,
-      password,
       role,
       designation,
       phone,
       department_id: departmentId || undefined,
     };
+
+    // Only include password when editing user (if provided)
+    if (editingUser && password) {
+      userData.password = password;
+    }
 
     try {
       setSubmitting(true);
@@ -184,8 +167,15 @@ export default function UsersPage() {
         );
         toast.success("User updated successfully");
       } else {
-        await apiService.post(API_ENDPOINTS.USERS, userData);
-        toast.success("User created successfully");
+        const response = await apiService.post<{
+          success: boolean;
+          data: { password: string };
+        }>(API_ENDPOINTS.USERS, userData);
+        toast.success(
+          `User created successfully! Auto-generated password: ${
+            response.data?.password || "Check email"
+          }`
+        );
       }
       setIsDialogOpen(false);
       resetForm();
@@ -343,147 +333,6 @@ export default function UsersPage() {
     );
   };
 
-  // User form fields component
-  const UserFormFields = ({
-    email,
-    firstName,
-    lastName,
-    password,
-    role,
-    designation,
-    phone,
-    departmentId,
-    departments,
-    setEmail,
-    setFirstName,
-    setLastName,
-    setPassword,
-    setRole,
-    setDesignation,
-    setPhone,
-    setDepartmentId,
-  }: UserFormFieldsProps) => {
-    return (
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="first_name">
-            First Name <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="first_name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            required
-            placeholder="John"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="last_name">
-            Last Name <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="last_name"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            required
-            placeholder="Doe"
-          />
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="email">
-            Email <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="john@example.com"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">
-            Password{" "}
-            {!editingUser && <span className="text-destructive">*</span>}
-          </Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required={!editingUser}
-            placeholder="••••••••"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="role">
-            Role <span className="text-destructive">*</span>
-          </Label>
-          <Select value={role} onValueChange={setRole}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              {currentUser?.role === "superadmin" && (
-                <>
-                  <SelectItem value="employee">Employee</SelectItem>
-                  <SelectItem value="hr">HR</SelectItem>
-                  <SelectItem value="payroll">Payroll</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </>
-              )}
-              {currentUser?.role === "admin" && (
-                <>
-                  <SelectItem value="employee">Employee</SelectItem>
-                  <SelectItem value="hr">HR</SelectItem>
-                  <SelectItem value="payroll">Payroll</SelectItem>
-                </>
-              )}
-              {currentUser?.role === "hr" && (
-                <SelectItem value="employee">Employee</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="designation">Designation</Label>
-          <Input
-            id="designation"
-            value={designation}
-            onChange={(e) => setDesignation(e.target.value)}
-            placeholder="Software Engineer"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="department">Department</Label>
-          <Select value={departmentId} onValueChange={setDepartmentId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select department" />
-            </SelectTrigger>
-            <SelectContent>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+1234567890"
-          />
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="flex flex-col gap-6 p-6">
       {/* Header Section */}
@@ -636,107 +485,163 @@ export default function UsersPage() {
         </Table>
       </div>
 
-      {/* Mobile Drawer */}
-      {isMobile && (
-        <Drawer open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DrawerContent className="max-h-[95vh]">
-            <DrawerHeader>
-              <DrawerTitle>
-                {editingUser ? "Edit User" : "Add New User"}
-              </DrawerTitle>
-              <DrawerDescription>Fill in the required fields</DrawerDescription>
-            </DrawerHeader>
-            <form onSubmit={handleSubmit} className="px-4 pb-4 overflow-y-auto">
-              <div className="space-y-4 pb-4">
-                <UserFormFields
-                  email={email}
-                  firstName={firstName}
-                  lastName={lastName}
-                  password={password}
-                  role={role}
-                  designation={designation}
-                  phone={phone}
-                  departmentId={departmentId}
-                  departments={departments}
-                  setEmail={setEmail}
-                  setFirstName={setFirstName}
-                  setLastName={setLastName}
-                  setPassword={setPassword}
-                  setRole={setRole}
-                  setDesignation={setDesignation}
-                  setPhone={setPhone}
-                  setDepartmentId={setDepartmentId}
+      {/* User Form Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingUser ? "Edit User" : "Add New User"}
+            </DialogTitle>
+            <DialogDescription>
+              Fill in the required fields below
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">
+                  First Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="first_name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  placeholder="John"
                 />
               </div>
-              <DrawerFooter className="px-0 pt-4">
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? "Saving..." : editingUser ? "Update" : "Create"}
-                </Button>
-                <DrawerClose asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </form>
-          </DrawerContent>
-        </Drawer>
-      )}
-
-      {/* Desktop Dialog */}
-      {!isMobile && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingUser ? "Edit User" : "Add New User"}
-              </DialogTitle>
-              <DialogDescription>
-                Fill in the required fields below
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <UserFormFields
-                email={email}
-                firstName={firstName}
-                lastName={lastName}
-                password={password}
-                role={role}
-                designation={designation}
-                phone={phone}
-                departmentId={departmentId}
-                departments={departments}
-                setEmail={setEmail}
-                setFirstName={setFirstName}
-                setLastName={setLastName}
-                setPassword={setPassword}
-                setRole={setRole}
-                setDesignation={setDesignation}
-                setPhone={setPhone}
-                setDepartmentId={setDepartmentId}
-              />
-              <DialogFooter className="gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  disabled={submitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Saving..." : editingUser ? "Update" : "Create"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
+              <div className="space-y-2">
+                <Label htmlFor="last_name">
+                  Last Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="last_name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  placeholder="Doe"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="email">
+                  Email <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="john@example.com"
+                />
+              </div>
+              {editingUser && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="password">
+                    Password{" "}
+                    <span className="text-xs text-muted-foreground">
+                      (Leave blank to keep current)
+                    </span>
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                </div>
+              )}
+              {!editingUser && (
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                    <span className="text-sm text-muted-foreground">
+                      Password will be auto-generated and shown after creation
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="role">
+                  Role <span className="text-destructive">*</span>
+                </Label>
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentUser?.role === "superadmin" && (
+                      <>
+                        <SelectItem value="employee">Employee</SelectItem>
+                        <SelectItem value="hr">HR</SelectItem>
+                        <SelectItem value="payroll">Payroll</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </>
+                    )}
+                    {currentUser?.role === "admin" && (
+                      <>
+                        <SelectItem value="employee">Employee</SelectItem>
+                        <SelectItem value="hr">HR</SelectItem>
+                        <SelectItem value="payroll">Payroll</SelectItem>
+                      </>
+                    )}
+                    {currentUser?.role === "hr" && (
+                      <SelectItem value="employee">Employee</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select value={departmentId} onValueChange={setDepartmentId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="designation">Designation</Label>
+                <Input
+                  id="designation"
+                  value={designation}
+                  onChange={(e) => setDesignation(e.target.value)}
+                  placeholder="Software Engineer"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+1234567890"
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Saving..." : editingUser ? "Update" : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Salary Structure Dialog */}
       <Dialog open={isSalaryDialogOpen} onOpenChange={setIsSalaryDialogOpen}>

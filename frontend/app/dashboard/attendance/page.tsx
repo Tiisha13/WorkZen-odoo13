@@ -299,108 +299,119 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Today's Attendance Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Today&apos;s Attendance</CardTitle>
-          <CardDescription>Check in and check out for today</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="space-y-2">
-              {todayAttendance ? (
-                <>
-                  <div className="flex flex-wrap items-center gap-4 md:gap-6">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Check-in</p>
-                      <p className="text-lg font-semibold">
-                        {formatTime(todayAttendance.check_in)}
-                      </p>
+      {/* Today's Attendance Card - Hidden for Admin/SuperAdmin */}
+      {user?.role !== "admin" && user?.role !== "superadmin" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Today&apos;s Attendance</CardTitle>
+            <CardDescription>Check in and check out for today</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="space-y-2">
+                {todayAttendance ? (
+                  <>
+                    <div className="flex flex-wrap items-center gap-4 md:gap-6">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Check-in
+                        </p>
+                        <p className="text-lg font-semibold">
+                          {formatTime(todayAttendance.check_in)}
+                        </p>
+                      </div>
+                      {todayAttendance.check_out && (
+                        <>
+                          <div className="hidden md:block text-muted-foreground">
+                            →
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Check-out
+                            </p>
+                            <p className="text-lg font-semibold">
+                              {formatTime(todayAttendance.check_out)}
+                            </p>
+                          </div>
+                          {todayAttendance.working_hours && (
+                            <>
+                              <div className="hidden md:block text-muted-foreground">
+                                •
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">
+                                  Working Hours
+                                </p>
+                                <p className="text-lg font-semibold">
+                                  {todayAttendance.working_hours.toFixed(2)}h
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )}
                     </div>
-                    {todayAttendance.check_out && (
-                      <>
-                        <div className="hidden md:block text-muted-foreground">
-                          →
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Check-out
-                          </p>
-                          <p className="text-lg font-semibold">
-                            {formatTime(todayAttendance.check_out)}
-                          </p>
-                        </div>
-                        {todayAttendance.working_hours && (
-                          <>
-                            <div className="hidden md:block text-muted-foreground">
-                              •
-                            </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">
-                                Working Hours
-                              </p>
-                              <p className="text-lg font-semibold">
-                                {todayAttendance.working_hours.toFixed(2)}h
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  You haven&apos;t checked in today
-                </p>
-              )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    You haven&apos;t checked in today
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {!todayAttendance ? (
+                  <Button
+                    onClick={handleCheckIn}
+                    disabled={checkingIn}
+                    size="sm"
+                  >
+                    <IconClock className="w-4 h-4 mr-2" />
+                    {checkingIn ? "Checking In..." : "Check In"}
+                  </Button>
+                ) : !todayAttendance.check_out ? (
+                  <>
+                    <Button
+                      onClick={handleCheckOut}
+                      disabled={checkingIn}
+                      variant="destructive"
+                      size="sm"
+                    >
+                      <IconClockStop className="w-4 h-4 mr-2" />
+                      {checkingIn ? "Checking Out..." : "Check Out"}
+                    </Button>
+                    <Button
+                      onClick={handleReset}
+                      disabled={checkingIn}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Reset
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Badge
+                      variant="outline"
+                      className="text-green-600 px-4 py-2"
+                    >
+                      <IconCalendar className="w-4 h-4 mr-2" />
+                      Completed
+                    </Badge>
+                    <Button
+                      onClick={handleReset}
+                      disabled={checkingIn}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Reset
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {!todayAttendance ? (
-                <Button onClick={handleCheckIn} disabled={checkingIn} size="sm">
-                  <IconClock className="w-4 h-4 mr-2" />
-                  {checkingIn ? "Checking In..." : "Check In"}
-                </Button>
-              ) : !todayAttendance.check_out ? (
-                <>
-                  <Button
-                    onClick={handleCheckOut}
-                    disabled={checkingIn}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    <IconClockStop className="w-4 h-4 mr-2" />
-                    {checkingIn ? "Checking Out..." : "Check Out"}
-                  </Button>
-                  <Button
-                    onClick={handleReset}
-                    disabled={checkingIn}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Reset
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Badge variant="outline" className="text-green-600 px-4 py-2">
-                    <IconCalendar className="w-4 h-4 mr-2" />
-                    Completed
-                  </Badge>
-                  <Button
-                    onClick={handleReset}
-                    disabled={checkingIn}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Reset
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Attendance Records Table */}
       <div className="bg-card rounded-lg border shadow-sm">

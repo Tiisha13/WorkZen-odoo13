@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"api.workzen.odoo/constants"
+	"api.workzen.odoo/databases/models"
 	"api.workzen.odoo/middlewares"
 	"api.workzen.odoo/services"
 	"github.com/gofiber/fiber/v2"
@@ -26,6 +27,17 @@ func (ac *AttendanceController) CheckIn(c *fiber.Ctx) error {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
 	}
 
+	// Get user role
+	user, err := middlewares.GetAuthUser(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	// Admin and SuperAdmin cannot mark attendance
+	if user.Role == models.RoleAdmin || user.Role == models.RoleSuperAdmin {
+		return constants.HTTPErrors.Forbidden(c, "Administrators do not need to mark attendance")
+	}
+
 	companyID, err := middlewares.GetAuthCompanyID(c)
 	if err != nil {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
@@ -44,6 +56,17 @@ func (ac *AttendanceController) CheckOut(c *fiber.Ctx) error {
 	userID, err := middlewares.GetAuthUserID(c)
 	if err != nil {
 		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	// Get user role
+	user, err := middlewares.GetAuthUser(c)
+	if err != nil {
+		return constants.HTTPErrors.Unauthorized(c, err.Error())
+	}
+
+	// Admin and SuperAdmin cannot mark attendance
+	if user.Role == models.RoleAdmin || user.Role == models.RoleSuperAdmin {
+		return constants.HTTPErrors.Forbidden(c, "Administrators do not need to mark attendance")
 	}
 
 	err = ac.service.CheckOut(userID)
