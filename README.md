@@ -523,5 +523,4 @@ This project was developed by:
 - **Tisha Patel** - [@Tiisha13](https://github.com/Tiisha13)
 
 ## Demo Video
-
-<div style="padding:75% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1135002574?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="New Recording - 11_9_2025, 10_52_07 AM"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script>
+link -> https://vimeo.com/1135002574?share=copy
