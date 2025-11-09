@@ -262,153 +262,163 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Salary Information Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <IconCurrencyDollar className="w-5 h-5" />
-                  Salary Information
-                </CardTitle>
-                <CardDescription>Your current salary structure</CardDescription>
+        {/* Salary Information Card - Hidden for Admin/SuperAdmin */}
+        {user?.role !== "admin" && user?.role !== "superadmin" && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <IconCurrencyDollar className="w-5 h-5" />
+                    Salary Information
+                  </CardTitle>
+                  <CardDescription>
+                    Your current salary structure
+                  </CardDescription>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    toast.info("Salary reports feature coming soon!");
+                  }}
+                >
+                  <IconReport className="w-4 h-4 mr-2" />
+                  View Reports
+                </Button>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  toast.info("Salary reports feature coming soon!");
-                }}
-              >
-                <IconReport className="w-4 h-4 mr-2" />
-                View Reports
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loadingSalary ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </CardHeader>
+            <CardContent>
+              {loadingSalary ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : salary ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Monthly Wage
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {formatCurrency(salary.monthly_wage)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Yearly Wage</p>
+                    <p className="text-xl font-semibold">
+                      {formatCurrency(salary.yearly_wage)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Effective From
+                    </p>
+                    <p className="font-medium">
+                      {new Date(salary.effective_from).toLocaleDateString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge
+                      variant={salary.is_active ? "default" : "secondary"}
+                      className={
+                        salary.is_active
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }
+                    >
+                      {salary.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <IconCurrencyDollar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No salary information available</p>
+                  <p className="text-sm">Contact HR for salary details</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Bank Details Card - Hidden for Admin/SuperAdmin */}
+        {user?.role !== "admin" && user?.role !== "superadmin" && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <IconBuildingBank className="w-5 h-5" />
+                    Bank Details
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your banking information
+                  </CardDescription>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsBankDialogOpen(true)}
+                >
+                  <IconEdit className="w-4 h-4 mr-2" />
+                  Update
+                </Button>
               </div>
-            ) : salary ? (
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Monthly Wage</p>
-                  <p className="text-2xl font-bold">
-                    {formatCurrency(salary.monthly_wage)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Yearly Wage</p>
-                  <p className="text-xl font-semibold">
-                    {formatCurrency(salary.yearly_wage)}
-                  </p>
-                </div>
-                <div>
                   <p className="text-sm text-muted-foreground">
-                    Effective From
+                    Account Number
                   </p>
                   <p className="font-medium">
-                    {new Date(salary.effective_from).toLocaleDateString(
-                      "en-US",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }
-                    )}
+                    {bankDetails.account_number
+                      ? `****${bankDetails.account_number.slice(-4)}`
+                      : "Not provided"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge
-                    variant={salary.is_active ? "default" : "secondary"}
-                    className={
-                      salary.is_active
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }
-                  >
-                    {salary.is_active ? "Active" : "Inactive"}
-                  </Badge>
+                  <p className="text-sm text-muted-foreground">Bank Name</p>
+                  <p className="font-medium">
+                    {bankDetails.bank_name || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">IFSC Code</p>
+                  <p className="font-medium">
+                    {bankDetails.ifsc_code || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Branch Name</p>
+                  <p className="font-medium">
+                    {bankDetails.branch_name || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">PAN Number</p>
+                  <p className="font-medium">
+                    {bankDetails.pan_no || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">UAN Number</p>
+                  <p className="font-medium">
+                    {bankDetails.uan_no || "Not provided"}
+                  </p>
                 </div>
               </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <IconCurrencyDollar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No salary information available</p>
-                <p className="text-sm">Contact HR for salary details</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Bank Details Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <IconBuildingBank className="w-5 h-5" />
-                  Bank Details
-                </CardTitle>
-                <CardDescription>
-                  Manage your banking information
-                </CardDescription>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsBankDialogOpen(true)}
-              >
-                <IconEdit className="w-4 h-4 mr-2" />
-                Update
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Account Number</p>
-                <p className="font-medium">
-                  {bankDetails.account_number
-                    ? `****${bankDetails.account_number.slice(-4)}`
-                    : "Not provided"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Bank Name</p>
-                <p className="font-medium">
-                  {bankDetails.bank_name || "Not provided"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">IFSC Code</p>
-                <p className="font-medium">
-                  {bankDetails.ifsc_code || "Not provided"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Branch Name</p>
-                <p className="font-medium">
-                  {bankDetails.branch_name || "Not provided"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">PAN Number</p>
-                <p className="font-medium">
-                  {bankDetails.pan_no || "Not provided"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">UAN Number</p>
-                <p className="font-medium">
-                  {bankDetails.uan_no || "Not provided"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Bank Details Dialog */}

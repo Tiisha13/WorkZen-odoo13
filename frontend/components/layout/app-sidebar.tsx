@@ -23,6 +23,7 @@ import {
   IconSettings,
   IconLogout,
   IconClock,
+  IconUserCircle,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -138,8 +139,22 @@ export function AppSidebar() {
                     href="/dashboard/profile"
                     className="flex items-center gap-2"
                   >
-                    <IconSettings className="h-4 w-4" />
+                    <IconUserCircle className="h-4 w-4" />
                     <span>Profile</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/dashboard/settings"}
+                >
+                  <Link
+                    href="/dashboard/settings"
+                    className="flex items-center gap-2"
+                  >
+                    <IconSettings className="h-4 w-4" />
+                    <span>Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
