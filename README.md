@@ -2,8 +2,6 @@
 
 A modern, full-stack **Human Resource Management System** built with **Go (Fiber)**, **MongoDB**, **Next.js 16**, and **TypeScript**. WorkZen provides comprehensive HR operations including attendance tracking, leave management, payroll processing, and employee management with a beautiful, responsive UI.
 
-![WorkZen HRMS](HRMS%20Flow.excalidraw.png)
-
 ## ✨ Features
 
 ### 🔐 Authentication & Authorization
