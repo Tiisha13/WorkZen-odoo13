@@ -221,96 +221,96 @@ export default function DepartmentsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="font-semibold">
-                    Department Name
-                  </TableHead>
-                  <TableHead className="font-semibold">Description</TableHead>
-                  <TableHead className="font-semibold">
-                    <div className="flex items-center gap-2">
-                      <IconUsers className="w-4 h-4" />
-                      Employees
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-right font-semibold">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
+          <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-12">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <p className="text-sm text-muted-foreground">
-                          Loading departments...
-                        </p>
+                    <TableHead>Department Name</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <IconUsers className="w-4 h-4" />
+                        Employees
                       </div>
-                    </TableCell>
+                    </TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : filteredDepartments.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="text-center py-12 text-muted-foreground"
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <IconSearch className="w-12 h-12 opacity-20" />
-                        <p className="font-medium">No departments found</p>
-                        <p className="text-sm">
-                          {searchTerm
-                            ? "Try adjusting your search"
-                            : "Click 'Add Department' to create one"}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredDepartments.map((dept) => (
-                    <TableRow
-                      key={dept.id}
-                      className="hover:bg-muted/50 transition-colors"
-                    >
-                      <TableCell className="font-medium">{dept.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {dept.description || (
-                          <span className="italic">No description</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="font-mono">
-                          {dept.employee_count || 0}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(dept)}
-                            className="hover:bg-blue-50 hover:text-blue-600"
-                          >
-                            <IconEdit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(dept.id)}
-                            className="hover:bg-red-50 hover:text-red-600"
-                          >
-                            <IconTrash className="w-4 h-4" />
-                          </Button>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-12">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                          <p className="text-sm text-muted-foreground">
+                            Loading departments...
+                          </p>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : filteredDepartments.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-12 text-muted-foreground"
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <IconSearch className="w-12 h-12 opacity-20" />
+                          <p className="font-medium">No departments found</p>
+                          <p className="text-sm">
+                            {searchTerm
+                              ? "Try adjusting your search"
+                              : "Click 'Add Department' to create one"}
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredDepartments.map((dept) => (
+                      <TableRow
+                        key={dept.id}
+                        className="hover:bg-muted/50 transition-colors"
+                      >
+                        <TableCell className="font-medium">
+                          {dept.name}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {dept.description || (
+                            <span className="italic">No description</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="font-mono">
+                            {dept.employee_count || 0}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEdit(dept)}
+                              className="hover:bg-blue-50 hover:text-blue-600"
+                            >
+                              <IconEdit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDelete(dept.id)}
+                              className="hover:bg-red-50 hover:text-red-600"
+                            >
+                              <IconTrash className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>

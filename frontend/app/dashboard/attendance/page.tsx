@@ -414,64 +414,66 @@ export default function AttendancePage() {
       )}
 
       {/* Attendance Records Table */}
-      <div className="bg-card rounded-lg border shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Check In</TableHead>
-              <TableHead>Check Out</TableHead>
-              <TableHead>Working Hours</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center">
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                </TableCell>
+                <TableHead>Date</TableHead>
+                <TableHead>Check In</TableHead>
+                <TableHead>Check Out</TableHead>
+                <TableHead>Working Hours</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            ) : attendances.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center">
-                  <div className="flex flex-col items-center justify-center text-muted-foreground">
-                    <p className="text-sm">No attendance records found</p>
-                    <p className="text-xs mt-1">Start by checking in today</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              attendances.map((attendance) => (
-                <TableRow key={attendance.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    {formatDate(attendance.date)}
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-32 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {formatTime(attendance.check_in)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {attendance.check_out ? (
-                      formatTime(attendance.check_out)
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {attendance.working_hours ? (
-                      `${attendance.working_hours.toFixed(2)}h`
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{getStatusBadge(attendance.status)}</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : attendances.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <p className="text-sm">No attendance records found</p>
+                      <p className="text-xs mt-1">Start by checking in today</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                attendances.map((attendance) => (
+                  <TableRow key={attendance.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">
+                      {formatDate(attendance.date)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatTime(attendance.check_in)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {attendance.check_out ? (
+                        formatTime(attendance.check_out)
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {attendance.working_hours ? (
+                        `${attendance.working_hours.toFixed(2)}h`
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(attendance.status)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
