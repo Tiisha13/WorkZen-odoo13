@@ -127,16 +127,16 @@ export interface Salary {
 
 export interface Document {
   id: string;
-  user_id: string;
-  user?: User;
-  title: string;
-  description?: string;
+  company: string;
+  employee_id?: string;
   file_name: string;
   file_path: string;
+  file_url: string;
   file_type: string;
-  file_size: number;
+  size: number;
   category: string;
   uploaded_by: string;
+  description?: string;
   is_private: boolean;
   created_at?: string;
   updated_at?: string;
