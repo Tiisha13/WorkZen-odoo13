@@ -502,16 +502,6 @@ Contributions are welcome! Please follow these steps:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Tiisha13**
-
-- GitHub: [@Tiisha13](https://github.com/Tiisha13)
-
 ## 🙏 Acknowledgments
 
 - [Fiber](https://gofiber.io/) - Express-inspired Go web framework
