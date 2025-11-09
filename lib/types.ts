@@ -141,3 +141,45 @@ export interface Document {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface DepartmentStats {
+  name: string;
+  count: number;
+  present: number;
+  absent: number;
+  on_leave: number;
+}
+
+export interface MonthlyAttendance {
+  month: string;
+  present: number;
+  absent: number;
+  on_leave: number;
+}
+
+export interface LeaveTypeStats {
+  type: string;
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
+export interface DashboardData {
+  total_employees: number;
+  active_employees: number;
+  inactive_employees: number;
+  total_departments: number;
+  present_today: number;
+  absent_today: number;
+  on_leave_today: number;
+  pending_leaves: number;
+  approved_leaves: number;
+  rejected_leaves: number;
+  total_payroll: number;
+  processed_payroll: number;
+  pending_payroll: number;
+  attendance_rate: number;
+  department_stats: DepartmentStats[];
+  monthly_attendance: MonthlyAttendance[];
+  leave_type_stats: LeaveTypeStats[];
+}
