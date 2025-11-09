@@ -15,11 +15,11 @@ func CalculateSalaryComponents(monthlyWage float64, config *models.PayrollConfig
 	if config == nil {
 		// Use default percentages if no configuration provided
 		config = &models.PayrollConfiguration{
-			DefaultBasicPercent:      50.0,
-			DefaultHRAPercent:        50.0, // 50% of Basic
-			DefaultStandardAllowance: 16.67,
-			DefaultPerformanceBonus:  8.33,
-			DefaultLTA:               8.33,
+			DefaultBasicPercent:      40.0, // 40% of monthly wage
+			DefaultHRAPercent:        40.0, // 40% of Basic (16% of monthly wage)
+			DefaultStandardAllowance: 15.0, // 15% of monthly wage
+			DefaultPerformanceBonus:  10.0, // 10% of monthly wage
+			DefaultLTA:               10.0, // 10% of monthly wage
 		}
 	}
 
