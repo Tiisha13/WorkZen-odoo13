@@ -525,6 +525,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support, email support@workzen.com or open an issue on GitHub.
 
----
+## 👥 Team
 
-**Made with ❤️ by Tiisha13**
+This project was developed by:
+
+- **Shani Sinojiya** - [@Shani-Sinojiya](https://github.com/Shani-Sinojiya)
+- **Tisha Patel** - [@Tiisha13](https://github.com/Tiisha13)
