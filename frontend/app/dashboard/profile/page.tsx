@@ -35,6 +35,9 @@ import {
   IconBuildingBank,
   IconEdit,
   IconReport,
+  IconShield,
+  IconCircleCheck,
+  IconBarcode,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -237,21 +240,21 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-5 h-5" />
+              <IconShield className="w-5 h-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Role</p>
                 {getRoleBadge(user?.role || "employee")}
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-5 h-5" />
+              <IconCircleCheck className="w-5 h-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
                 {getStatusBadge(user?.status || "active")}
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-5 h-5" />
+              <IconBarcode className="w-5 h-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Employee Code</p>
                 <p className="font-medium">
