@@ -49,22 +49,54 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { IconPlus, IconEdit, IconTrash, IconSearch } from "@tabler/icons-react";
+import {
+  IconPlus,
+  IconEdit,
+  IconTrash,
+  IconSearch,
+  IconCurrencyDollar,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import { useMediaQuery, usePageTitle, useRequireAuth } from "@/lib/hooks";
 import type { User, Department } from "@/lib/types";
+
+interface UserFormFieldsProps {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  role: string;
+  designation: string;
+  phone: string;
+  departmentId: string;
+  departments: Department[];
+
+  setEmail: React.Dispatch<React.SetStateAction<string>>;
+  setFirstName: React.Dispatch<React.SetStateAction<string>>;
+  setLastName: React.Dispatch<React.SetStateAction<string>>;
+  setPassword: React.Dispatch<React.SetStateAction<string>>;
+  setRole: React.Dispatch<React.SetStateAction<string>>;
+  setDesignation: React.Dispatch<React.SetStateAction<string>>;
+  setPhone: React.Dispatch<React.SetStateAction<string>>;
+  setDepartmentId: React.Dispatch<React.SetStateAction<string>>;
+}
 
 export default function UsersPage() {
   usePageTitle("User Management | WorkZen");
   useRequireAuth(["superadmin", "admin", "hr"]);
 
-  const [mounted, setMounted] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Salary dialog states
+  const [isSalaryDialogOpen, setIsSalaryDialogOpen] = useState(false);
+  const [salaryUser, setSalaryUser] = useState<User | null>(null);
+  const [monthlyWage, setMonthlyWage] = useState("");
+  const [effectiveFrom, setEffectiveFrom] = useState("");
 
   // Individual form states
   const [email, setEmail] = useState("");
@@ -81,7 +113,6 @@ export default function UsersPage() {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
-    setMounted(true);
     fetchUsers();
     fetchDepartments();
   }, []);
@@ -199,6 +230,46 @@ export default function UsersPage() {
     setEditingUser(null);
   };
 
+  const handleSalarySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!salaryUser?.id) return;
+
+    try {
+      setSubmitting(true);
+      await apiService.post(API_ENDPOINTS.SALARY, {
+        employee_id: salaryUser.id,
+        monthly_wage: parseFloat(monthlyWage),
+        effective_from: effectiveFrom || new Date().toISOString().split("T")[0],
+      });
+      toast.success("Salary structure created successfully");
+      setIsSalaryDialogOpen(false);
+      setSalaryUser(null);
+      setMonthlyWage("");
+      setEffectiveFrom("");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to create salary structure";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openSalaryDialog = (user: User) => {
+    // Only allow for non-admin roles
+    if (user.role === "superadmin" || user.role === "admin") {
+      toast.info("Administrators do not have salary structures");
+      return;
+    }
+    setSalaryUser(user);
+    setMonthlyWage("");
+    setEffectiveFrom(new Date().toISOString().split("T")[0]);
+    setIsSalaryDialogOpen(true);
+  };
+
   const handleEdit = (user: User) => {
     setEditingUser(user);
     setEmail(user.email);
@@ -268,119 +339,146 @@ export default function UsersPage() {
     );
   };
 
-  // Simplified and optimized form
-  const UserFormFields = () => (
-    <div className="grid gap-4 md:grid-cols-2">
-      <div className="space-y-1.5">
-        <Label htmlFor="first_name">First Name *</Label>
-        <Input
-          id="first_name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          required
-          placeholder="John"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="last_name">Last Name *</Label>
-        <Input
-          id="last_name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          required
-          placeholder="Doe"
-        />
-      </div>
-      <div className="space-y-1.5 md:col-span-2">
-        <Label htmlFor="email">Email *</Label>
-        <Input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          placeholder="john@example.com"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="password">Password {!editingUser && "*"}</Label>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required={!editingUser}
-          placeholder="••••••••"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="role">Role *</Label>
-        <Select value={role} onValueChange={setRole}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select role" />
-          </SelectTrigger>
-          <SelectContent>
-            {currentUser?.role === "superadmin" && (
-              <>
+  // User form fields component
+  const UserFormFields = ({
+    email,
+    firstName,
+    lastName,
+    password,
+    role,
+    designation,
+    phone,
+    departmentId,
+    departments,
+    setEmail,
+    setFirstName,
+    setLastName,
+    setPassword,
+    setRole,
+    setDesignation,
+    setPhone,
+    setDepartmentId,
+  }: UserFormFieldsProps) => {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="first_name">
+            First Name <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="first_name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+            placeholder="John"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="last_name">
+            Last Name <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="last_name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            required
+            placeholder="Doe"
+          />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="email">
+            Email <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="john@example.com"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">
+            Password{" "}
+            {!editingUser && <span className="text-destructive">*</span>}
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required={!editingUser}
+            placeholder="••••••••"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="role">
+            Role <span className="text-destructive">*</span>
+          </Label>
+          <Select value={role} onValueChange={setRole}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select role" />
+            </SelectTrigger>
+            <SelectContent>
+              {currentUser?.role === "superadmin" && (
+                <>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="hr">HR</SelectItem>
+                  <SelectItem value="payroll">Payroll</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </>
+              )}
+              {currentUser?.role === "admin" && (
+                <>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="hr">HR</SelectItem>
+                  <SelectItem value="payroll">Payroll</SelectItem>
+                </>
+              )}
+              {currentUser?.role === "hr" && (
                 <SelectItem value="employee">Employee</SelectItem>
-                <SelectItem value="hr">HR</SelectItem>
-                <SelectItem value="payroll">Payroll</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </>
-            )}
-            {currentUser?.role === "admin" && (
-              <>
-                <SelectItem value="employee">Employee</SelectItem>
-                <SelectItem value="hr">HR</SelectItem>
-                <SelectItem value="payroll">Payroll</SelectItem>
-              </>
-            )}
-            {currentUser?.role === "hr" && (
-              <SelectItem value="employee">Employee</SelectItem>
-            )}
-          </SelectContent>
-        </Select>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="designation">Designation</Label>
+          <Input
+            id="designation"
+            value={designation}
+            onChange={(e) => setDesignation(e.target.value)}
+            placeholder="Software Engineer"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="department">Department</Label>
+          <Select value={departmentId} onValueChange={setDepartmentId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select department" />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.id}>
+                  {dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone</Label>
+          <Input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+1234567890"
+          />
+        </div>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="designation">Designation</Label>
-        <Input
-          id="designation"
-          value={designation}
-          onChange={(e) => setDesignation(e.target.value)}
-          placeholder="Software Engineer"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="department">Department</Label>
-        <Select value={departmentId} onValueChange={setDepartmentId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select department" />
-          </SelectTrigger>
-          <SelectContent>
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>
-                {dept.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="phone">Phone</Label>
-        <Input
-          id="phone"
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+1234567890"
-        />
-      </div>
-    </div>
-  );
-
-  if (!mounted) {
-    return null;
-  }
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -498,6 +596,17 @@ export default function UsersPage() {
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {user.role !== "superadmin" && user.role !== "admin" && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => openSalaryDialog(user)}
+                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          title="Manage Salary"
+                        >
+                          <IconCurrencyDollar className="w-4 h-4" />
+                        </Button>
+                      )}
                       <Button
                         size="icon"
                         variant="ghost"
@@ -535,7 +644,25 @@ export default function UsersPage() {
             </DrawerHeader>
             <form onSubmit={handleSubmit} className="px-4 pb-4 overflow-y-auto">
               <div className="space-y-4 pb-4">
-                <UserFormFields />
+                <UserFormFields
+                  email={email}
+                  firstName={firstName}
+                  lastName={lastName}
+                  password={password}
+                  role={role}
+                  designation={designation}
+                  phone={phone}
+                  departmentId={departmentId}
+                  departments={departments}
+                  setEmail={setEmail}
+                  setFirstName={setFirstName}
+                  setLastName={setLastName}
+                  setPassword={setPassword}
+                  setRole={setRole}
+                  setDesignation={setDesignation}
+                  setPhone={setPhone}
+                  setDepartmentId={setDepartmentId}
+                />
               </div>
               <DrawerFooter className="px-0 pt-4">
                 <Button type="submit" className="w-full" disabled={submitting}>
@@ -570,7 +697,25 @@ export default function UsersPage() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <UserFormFields />
+              <UserFormFields
+                email={email}
+                firstName={firstName}
+                lastName={lastName}
+                password={password}
+                role={role}
+                designation={designation}
+                phone={phone}
+                departmentId={departmentId}
+                departments={departments}
+                setEmail={setEmail}
+                setFirstName={setFirstName}
+                setLastName={setLastName}
+                setPassword={setPassword}
+                setRole={setRole}
+                setDesignation={setDesignation}
+                setPhone={setPhone}
+                setDepartmentId={setDepartmentId}
+              />
               <DialogFooter className="gap-2">
                 <Button
                   type="button"
@@ -588,6 +733,66 @@ export default function UsersPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Salary Structure Dialog */}
+      <Dialog open={isSalaryDialogOpen} onOpenChange={setIsSalaryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Salary Structure</DialogTitle>
+            <DialogDescription>
+              Set salary for {salaryUser?.first_name} {salaryUser?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSalarySubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="monthly_wage">
+                Monthly Wage ($) <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="monthly_wage"
+                type="number"
+                step="0.01"
+                min="0"
+                value={monthlyWage}
+                onChange={(e) => setMonthlyWage(e.target.value)}
+                placeholder="5000.00"
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                Yearly: $
+                {monthlyWage
+                  ? (parseFloat(monthlyWage) * 12).toFixed(2)
+                  : "0.00"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="effective_from">
+                Effective From <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="effective_from"
+                type="date"
+                value={effectiveFrom}
+                onChange={(e) => setEffectiveFrom(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsSalaryDialogOpen(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Creating..." : "Create Salary"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

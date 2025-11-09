@@ -95,8 +95,12 @@ export default function ProfilePage() {
       );
       setSalary(response.data);
     } catch (error) {
-      console.error("Failed to fetch salary:", error);
-      // Don't show error toast, just silently fail if no salary exists
+      // Silently handle 404 - employee simply doesn't have salary structure yet
+      if (error instanceof Error && error.message.includes("not found")) {
+        setSalary(null);
+      } else {
+        console.error("Failed to fetch salary:", error);
+      }
     } finally {
       setLoadingSalary(false);
     }
