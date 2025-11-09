@@ -524,4 +524,4 @@ This project was developed by:
 
 ## Demo Video
 
-<div style="padding:75.00% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1135002138?h=5498b9bf86&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479%2Fembed" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen="" frameborder="0" style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe></div>
+<div style="padding:75% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1135002574?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="New Recording - 11_9_2025, 10_52_07 AM"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script>
