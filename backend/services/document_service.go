@@ -231,3 +231,22 @@ func (s *DocumentService) DeleteDocument(documentID, companyID primitive.ObjectI
 
 	return nil
 }
+
+// GetDocumentByID retrieves a single document by ID
+func (s *DocumentService) GetDocumentByID(documentID, companyID primitive.ObjectID) (*models.Document, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	documentCollection := databases.MongoDBDatabase.Collection(collections.Documents)
+
+	var document models.Document
+	err := documentCollection.FindOne(ctx, bson.M{
+		"_id":     documentID,
+		"company": companyID,
+	}).Decode(&document)
+	if err != nil {
+		return nil, errors.New("document not found")
+	}
+
+	return &document, nil
+}
